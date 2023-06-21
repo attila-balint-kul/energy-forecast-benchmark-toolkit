@@ -60,5 +60,5 @@ class ForecastClient:
         if not response.ok:
             response.raise_for_status()
 
-        df = pd.read_parquet(io.BytesIO(response.content))
+        df = pd.DataFrame.from_records(response.json()['forecast'])
         return df
