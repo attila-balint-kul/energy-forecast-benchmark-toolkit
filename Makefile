@@ -16,6 +16,7 @@ PACKAGE_NAME = enfobench
 install:
 	pip install -U pip
 	pip install -e ."[test,dev]"
+	mypy --install-types
 
 ## Delete all compiled Python files
 clean:
@@ -44,7 +45,7 @@ tests:
 #################################################################################
 
 ## Build source distribution and wheel
-build: lint
+build: lint tests
 	hatch build
 
 ## Upload source distribution and wheel to PyPI
