@@ -60,5 +60,6 @@ class ForecastClient:
         if not response.ok:
             response.raise_for_status()
 
-        df = pd.DataFrame.from_records(response.json()['forecast'])
+        df = pd.DataFrame.from_records(response.json()["forecast"])
+        df['ds'] = pd.to_datetime(df['ds'])
         return df
