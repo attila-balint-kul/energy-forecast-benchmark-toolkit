@@ -15,7 +15,7 @@ def generate_cutoff_dates(
     end: pd.Timestamp,
     horizon: pd.Timedelta,
     step: pd.Timedelta,
-) -> list[pd.Timestamp]:
+) -> List[pd.Timestamp]:
     """Generate cutoff dates for cross-validation.
 
     Parameters
