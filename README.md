@@ -14,7 +14,6 @@ benchmark forecast models.
 
 - [Installation](#installation)
 - [Usage](#usage)
-- [Features](#features)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -28,12 +27,79 @@ pip install enfobench
 
 ## Usage
 
+Import your dataset and make sure that the timestamp column in named 'ds' and the target values named 'y'.
+
 ```python
-import enfobench as efb
+import pandas as pd
 
-# returns 3
-efb.example.add(1, 2)
+# Load your dataset and make sure that the timestamp column in named 'ds' and the target values named 'y'
+data = (
+    pd.read_csv("../path/to/your/data.csv")
+    .rename(columns={"timestamp": "ds", "value": "y"})
+)
+y = data.set_index("ds")["y"]
+```
 
+You can perform a cross validation on any model locally that adheres to the `enfobench.Model` protocol.
+
+```python
+import MyModel
+from enfobench.evaluation import cross_validate
+
+# Import your model and instantiate it
+model = MyModel()
+
+# Run cross validation on your model
+cv_results = cross_validate(
+    model,
+    start=pd.Timestamp("2018-01-01"),
+    end=pd.Timestamp("2018-01-31"),
+    horizon=pd.Timedelta("24 hours"),
+    step=pd.Timedelta("1 day"),
+    y=y,
+)
+```
+
+You can use the same crossvalidation interface with your model served behind an API.
+
+```python
+from enfobench.evaluation import cross_validate, ForecastClient
+
+# Import your model and instantiate it
+client = ForecastClient(host='localhost', port=3000)
+
+# Run cross validation on your model
+cv_results = cross_validate(
+    client,
+    start=pd.Timestamp("2018-01-01"),
+    end=pd.Timestamp("2018-01-31"),
+    horizon=pd.Timedelta("24 hours"),
+    step=pd.Timedelta("1 day"),
+    y=y,
+)
+```
+
+The package also collects common metrics for you that you can quickly evaluate on your results.
+
+```python
+from enfobench.evaluation import evaluate_metrics_on_forecasts
+
+from enfobench.evaluation.metrics import (
+    mean_bias_error, mean_absolute_error, mean_squared_error, root_mean_squared_error,
+)
+
+# Merge the cross validation results with the original data
+forecasts = cv_results.merge(data, on="ds", how="left")
+
+metrics = evaluate_metrics_on_forecasts(
+    forecasts,
+    metrics={
+        "mean_bias_error": mean_bias_error,
+        "mean_absolute_error": mean_absolute_error,
+        "mean_squared_error": mean_squared_error,
+        "root_mean_squared_error": root_mean_squared_error,
+    },
+)
 ```
 
 ## Contributing

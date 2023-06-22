@@ -42,6 +42,7 @@ def generate_cutoff_dates(
 def cross_validate(
     model: Union[Model, ForecastClient],
     start: pd.Timestamp,
+    end: pd.Timestamp,
     horizon: pd.Timedelta,
     step: pd.Timedelta,
     y: pd.Series,
@@ -56,6 +57,8 @@ def cross_validate(
         Model to cross-validate.
     start:
         Start date of the time series.
+    end:
+        End date of the time series.
     horizon:
         Forecast horizon.
     step:
@@ -69,7 +72,9 @@ def cross_validate(
         Frequency of the time series.
         (Optional, if not provided, it will be inferred from the time series index.)
     """
-    cutoff_dates = generate_cutoff_dates(start, y.index[-1], horizon, step)
+    if end > y.index[-1]:
+        raise ValueError("End date is beyond the target values.")
+    cutoff_dates = generate_cutoff_dates(start, end, horizon, step)
     horizon_length = steps_in_horizon(horizon, freq or y.index.inferred_freq)
 
     # Cross-validation
