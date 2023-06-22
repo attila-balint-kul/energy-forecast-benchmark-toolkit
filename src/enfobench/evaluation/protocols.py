@@ -28,7 +28,7 @@ class Model(Protocol):
     def info(self) -> ModelInfo:
         ...
 
-    def forecast(
+    def predict(
         self,
         h: int,
         y: pd.Series,

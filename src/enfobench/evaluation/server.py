@@ -41,7 +41,7 @@ def server_factory(model: Model) -> FastAPI:
         y_df["ds"] = pd.to_datetime(y_df["ds"])
         y = y_df.set_index("ds").y
 
-        forecast = model.forecast(
+        forecast = model.predict(
             h=horizon,
             y=y,
             # X=X_df,
