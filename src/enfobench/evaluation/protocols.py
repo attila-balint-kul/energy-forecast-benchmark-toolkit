@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Protocol, Optional, List
+from typing import Any, Protocol, Optional, List, Dict
 
 import pandas as pd
 from pydantic import BaseModel
@@ -15,11 +15,11 @@ class ForecasterType(str, Enum):
 class ModelInfo(BaseModel):
     name: str
     type: ForecasterType
-    params: dict[str, Any]
+    params: Dict[str, Any]
 
 
 class EnvironmentInfo(BaseModel):
-    packages: dict[str, str]
+    packages: Dict[str, str]
 
 
 class Model(Protocol):
