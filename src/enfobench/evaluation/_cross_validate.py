@@ -80,7 +80,7 @@ def cross_validate(
     forecasts = []
     for cutoff in tqdm(cutoff_dates):
         # make sure that there is no data leakage
-        history = y.loc[y.ds <= cutoff, ["ds", "y"]]
+        history = y.loc[y.index <= cutoff]
 
         forecast = model.predict(
             horizon_length,

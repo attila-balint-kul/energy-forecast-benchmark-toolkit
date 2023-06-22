@@ -37,7 +37,7 @@ class ForecastClient:
     def predict(
         self,
         horizon: int,
-        y: pd.DataFrame,
+        y: pd.Series,
         # X: pd.DataFrame,
         level: list[int] | None = None,
     ) -> pd.DataFrame:
@@ -47,8 +47,9 @@ class ForecastClient:
         if level is not None:
             params["level"] = level
 
+        y_df = y.rename_axis('ds').reset_index()
         files = {
-            "y": to_buffer(y),
+            "y": to_buffer(y_df),
             # "X": to_buffer(X),
         }
 
