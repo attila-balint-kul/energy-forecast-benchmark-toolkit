@@ -1,5 +1,5 @@
 import io
-from typing import Dict, Union, Optional, List
+from typing import Dict, List, Optional, Union
 
 import pandas as pd
 import requests
@@ -46,7 +46,7 @@ class ForecastClient:
         if level is not None:
             params["level"] = level
 
-        y_df = y.rename_axis('ds').reset_index()
+        y_df = y.rename_axis("ds").reset_index()
         files = {
             "y": to_buffer(y_df),
             # "X": to_buffer(X),

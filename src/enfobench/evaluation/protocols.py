@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Protocol, Optional, List, Dict
+from typing import Any, Dict, List, Optional, Protocol
 
 import pandas as pd
 from pydantic import BaseModel
