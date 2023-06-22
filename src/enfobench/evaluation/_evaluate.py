@@ -18,13 +18,14 @@ def evaluate_metric_on_forecast(forecast: pd.DataFrame, metric: Callable) -> flo
     metric_value:
         Metric value.
     """
-    _nonempty_df = forecast.dropna(subset=['y'])
+    _nonempty_df = forecast.dropna(subset=["y"])
     metric_value = metric(_nonempty_df.y, _nonempty_df.yhat)
     return metric_value
 
 
-def evaluate_metrics_on_forecast(forecast: pd.DataFrame, metrics: dict[str, Callable]) -> dict[
-    str, float]:
+def evaluate_metrics_on_forecast(
+    forecast: pd.DataFrame, metrics: dict[str, Callable]
+) -> dict[str, float]:
     """Evaluate multiple metrics on a single forecast.
 
     Parameters:
@@ -63,14 +64,15 @@ def evaluate_metric_on_forecasts(forecasts: pd.DataFrame, metric: Callable) -> p
     """
     metrics = {
         cutoff: evaluate_metric_on_forecast(group_df, metric)
-        for cutoff, group_df in forecasts.groupby('cutoff')
+        for cutoff, group_df in forecasts.groupby("cutoff")
     }
-    metrics_df = pd.DataFrame.from_dict(metrics, orient='index', columns=['value'])
+    metrics_df = pd.DataFrame.from_dict(metrics, orient="index", columns=["value"])
     return metrics_df
 
 
-def evaluate_metrics_on_forecasts(forecasts: pd.DataFrame,
-                                  metrics: dict[str, Callable]) -> pd.DataFrame:
+def evaluate_metrics_on_forecasts(
+    forecasts: pd.DataFrame, metrics: dict[str, Callable]
+) -> pd.DataFrame:
     """Evaluate multiple metrics on a set of forecasts made at different cutoff points.
 
     Parameters:
@@ -86,7 +88,7 @@ def evaluate_metrics_on_forecasts(forecasts: pd.DataFrame,
         Metric values for each cutoff with their weight.
     """
     metric_dfs = [
-        evaluate_metric_on_forecasts(forecasts, metric_func).rename(columns={'value': metric_name})
+        evaluate_metric_on_forecasts(forecasts, metric_func).rename(columns={"value": metric_name})
         for metric_name, metric_func in metrics.items()
     ]
     metrics_df = pd.concat(metric_dfs, axis=1)

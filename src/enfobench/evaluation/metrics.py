@@ -1,7 +1,4 @@
-from typing import Callable
-
 import numpy as np
-import pandas as pd
 from numpy import ndarray
 
 
@@ -13,7 +10,7 @@ def check_not_empty(*arrays: ndarray) -> None:
     *arrays: list or tuple of input arrays.
         Objects that will be checked for emptiness.
     """
-    if any([X.size == 0 for X in arrays]):
+    if any(X.size == 0 for X in arrays):
         raise ValueError("Found empty array in inputs.")
 
 
@@ -27,15 +24,13 @@ def check_consistent_length(*arrays: ndarray) -> None:
     *arrays : list or tuple of input arrays.
         Objects that will be checked for consistent length.
     """
-    if any([X.ndim != 1 for X in arrays]):
+    if any(X.ndim != 1 for X in arrays):
         raise ValueError("Found multi dimensional array in inputs.")
 
     lengths = [len(X) for X in arrays]
     uniques = np.unique(lengths)
     if len(uniques) > 1:
-        raise ValueError(
-            f"Found input variables with inconsistent numbers of samples: {lengths}"
-        )
+        raise ValueError(f"Found input variables with inconsistent numbers of samples: {lengths}")
 
 
 def check_has_no_nan(*arrays: ndarray) -> None:
@@ -48,9 +43,7 @@ def check_has_no_nan(*arrays: ndarray) -> None:
     """
     for X in arrays:
         if np.isnan(X).any():
-            raise ValueError(
-                f"Found NaNs in input variables: {X}"
-            )
+            raise ValueError(f"Found NaNs in input variables: {X}")
 
 
 def check_arrays(*arrays: ndarray) -> None:
@@ -135,4 +128,4 @@ def mean_absolute_percentage_error(y_true: ndarray, y_pred: ndarray) -> float:
     check_arrays(y_true, y_pred)
     if np.any(y_true == 0):
         raise ValueError("Found zero in true values. MAPE is undefined.")
-    return float(100. * np.mean(np.abs((y_true - y_pred) / y_true)))
+    return float(100.0 * np.mean(np.abs((y_true - y_pred) / y_true)))

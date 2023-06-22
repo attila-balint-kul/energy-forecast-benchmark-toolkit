@@ -1,3 +1,4 @@
+from ._cross_validate import cross_validate
 from ._evaluate import (
     evaluate_metric_on_forecast,
     evaluate_metric_on_forecasts,

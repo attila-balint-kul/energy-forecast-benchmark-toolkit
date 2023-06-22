@@ -3,7 +3,8 @@ from __future__ import annotations
 import pandas as pd
 from tqdm import tqdm
 
-from enfobench import Model, ForecastClient
+from enfobench.evaluation.client import ForecastClient
+from enfobench.evaluation.protocols import Model
 from enfobench.utils import steps_in_horizon
 
 
@@ -75,7 +76,7 @@ def cross_validate(
     forecasts = []
     for cutoff in tqdm(cutoff_dates):
         # make sure that there is no data leakage
-        history = y.loc[y.ds <= cutoff, ["ds", 'y']]
+        history = y.loc[y.ds <= cutoff, ["ds", "y"]]
 
         forecast = model.predict(
             horizon_length,
@@ -83,7 +84,7 @@ def cross_validate(
             level=level,
         )
         forecast = forecast.fillna(0)
-        forecast['cutoff'] = cutoff
+        forecast["cutoff"] = cutoff
         forecasts.append(forecast)
 
     crossval_df = pd.concat(forecasts)
