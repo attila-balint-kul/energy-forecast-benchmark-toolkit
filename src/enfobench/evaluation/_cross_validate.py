@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pandas as pd
 from tqdm import tqdm
 
-from enfobench.evaluation.client import ForecastClient
-from enfobench.evaluation.protocols import Model
 from enfobench.utils import steps_in_horizon
+
+if TYPE_CHECKING:
+    from enfobench.evaluation.client import ForecastClient
+    from enfobench.evaluation.protocols import Model
 
 
 def generate_cutoff_dates(

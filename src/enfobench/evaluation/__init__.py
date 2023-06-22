@@ -5,3 +5,4 @@ from ._evaluate import (
     evaluate_metrics_on_forecast,
     evaluate_metrics_on_forecasts,
 )
+from .client import ForecastClient
