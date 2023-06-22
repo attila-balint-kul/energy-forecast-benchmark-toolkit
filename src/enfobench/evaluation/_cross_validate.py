@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union, List, Optional
 
 import pandas as pd
 from tqdm import tqdm
@@ -44,13 +42,13 @@ def generate_cutoff_dates(
 
 
 def cross_validate(
-    model: Model | ForecastClient,
+    model: Union[Model, ForecastClient],
     start: pd.Timestamp,
     horizon: pd.Timedelta,
     step: pd.Timedelta,
     y: pd.Series,
-    level: list[int] | None = None,
-    freq: str | None = None,
+    level: Optional[List[int]] = None,
+    freq: Optional[str] = None,
 ) -> pd.DataFrame:
     """Cross-validate a model.
 

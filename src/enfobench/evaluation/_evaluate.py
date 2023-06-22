@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Dict
 
 import pandas as pd
 
@@ -24,8 +24,8 @@ def evaluate_metric_on_forecast(forecast: pd.DataFrame, metric: Callable) -> flo
 
 
 def evaluate_metrics_on_forecast(
-    forecast: pd.DataFrame, metrics: dict[str, Callable]
-) -> dict[str, float]:
+    forecast: pd.DataFrame, metrics: Dict[str, Callable]
+) -> Dict[str, float]:
     """Evaluate multiple metrics on a single forecast.
 
     Parameters:
@@ -71,7 +71,7 @@ def evaluate_metric_on_forecasts(forecasts: pd.DataFrame, metric: Callable) -> p
 
 
 def evaluate_metrics_on_forecasts(
-    forecasts: pd.DataFrame, metrics: dict[str, Callable]
+    forecasts: pd.DataFrame, metrics: Dict[str, Callable]
 ) -> pd.DataFrame:
     """Evaluate multiple metrics on a set of forecasts made at different cutoff points.
 

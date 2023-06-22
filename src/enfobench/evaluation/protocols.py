@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from enum import Enum
-from typing import Any, Protocol
+from typing import Any, Protocol, Optional, List
 
 import pandas as pd
 from pydantic import BaseModel
@@ -32,8 +30,8 @@ class Model(Protocol):
         self,
         h: int,
         y: pd.Series,
-        X: pd.DataFrame | None = None,
-        level: list[int] | None = None,
+        X: Optional[pd.DataFrame] = None,
+        level: Optional[List[int]] = None,
         **kwargs,
     ) -> pd.DataFrame:
         ...

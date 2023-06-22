@@ -1,6 +1,5 @@
-from __future__ import annotations
-
 import io
+from typing import Dict, Union, Optional, List
 
 import pandas as pd
 import requests
@@ -39,9 +38,9 @@ class ForecastClient:
         horizon: int,
         y: pd.Series,
         # X: pd.DataFrame,
-        level: list[int] | None = None,
+        level: Optional[List[int]] = None,
     ) -> pd.DataFrame:
-        params: dict[str, int | list[int]] = {
+        params: Dict[str, Union[int, List[int]]] = {
             "horizon": horizon,
         }
         if level is not None:

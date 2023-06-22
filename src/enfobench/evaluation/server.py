@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 import io
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 
 import pandas as pd
 import pkg_resources
@@ -33,7 +31,7 @@ def server_factory(model: Model) -> FastAPI:
         horizon: int,
         y: Annotated[bytes, File()],
         # X: Annotated[bytes, File()],
-        level: List[int] | None = Query(None),
+        level: Optional[List[int]] = Query(None),
     ):
         y_df = pd.read_parquet(io.BytesIO(y))
         # X_df = pd.read_parquet(io.BytesIO(X))
