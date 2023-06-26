@@ -52,8 +52,8 @@ model = MyModel()
 # Run cross validation on your model
 cv_results = cross_validate(
     model,
-    start=pd.Timestamp("2018-01-01"),
-    end=pd.Timestamp("2018-01-31"),
+    start_date=pd.Timestamp("2018-01-01"),
+    end_date=pd.Timestamp("2018-01-31"),
     horizon=pd.Timedelta("24 hours"),
     step=pd.Timedelta("1 day"),
     y=y,
@@ -71,8 +71,8 @@ client = ForecastClient(host='localhost', port=3000)
 # Run cross validation on your model
 cv_results = cross_validate(
     client,
-    start=pd.Timestamp("2018-01-01"),
-    end=pd.Timestamp("2018-01-31"),
+    start_date=pd.Timestamp("2018-01-01"),
+    end_date=pd.Timestamp("2018-01-31"),
     horizon=pd.Timedelta("24 hours"),
     step=pd.Timedelta("1 day"),
     y=y,

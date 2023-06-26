@@ -15,29 +15,32 @@ def to_buffer(df: pd.DataFrame) -> io.BytesIO:
 
 
 class ForecastClient:
-    def __init__(self, host: str = "localhost", port: int = 3000, secure: bool = False):
+    def __init__(
+        self, host: str = "localhost", port: int = 3000, secure: bool = False, client=None
+    ):
         self.base_url = f"{'https' if secure else 'http'}://{host}:{port}"
-        self.session = requests.Session()
+        self._session = requests.Session() if client is None else client
 
     def info(self) -> ModelInfo:
-        response = self.session.get(f"{self.base_url}/info")
-        if not response.ok:
+        response = self._session.get(f"{self.base_url}/info")
+        if response.status_code != 200:
             response.raise_for_status()
 
         return ModelInfo(**response.json())
 
     def environment(self) -> EnvironmentInfo:
-        response = self.session.get(f"{self.base_url}/environment")
-        if not response.ok:
+        response = self._session.get(f"{self.base_url}/environment")
+        if response.status_code != 200:
             response.raise_for_status()
 
         return EnvironmentInfo(**response.json())
 
-    def predict(
+    def forecast(
         self,
         horizon: int,
-        y: pd.Series,
-        # X: pd.DataFrame,
+        target: pd.DataFrame,
+        past_covariates: Optional[pd.DataFrame] = None,
+        future_covariates: Optional[pd.DataFrame] = None,
         level: Optional[List[int]] = None,
     ) -> pd.DataFrame:
         params: Dict[str, Union[int, List[int]]] = {
@@ -46,18 +49,20 @@ class ForecastClient:
         if level is not None:
             params["level"] = level
 
-        y_df = y.rename_axis("ds").reset_index()
         files = {
-            "y": to_buffer(y_df),
-            # "X": to_buffer(X),
+            "target": to_buffer(target),
         }
+        if past_covariates is not None:
+            files["past_covariates"] = to_buffer(past_covariates)
+        if future_covariates is not None:
+            files["future_covariates"] = to_buffer(future_covariates)
 
-        response = self.session.post(
-            url=f"{self.base_url}/predict",
+        response = self._session.post(
+            url=f"{self.base_url}/forecast",
             params=params,
             files=files,
         )
-        if not response.ok:
+        if response.status_code != 200:
             response.raise_for_status()
 
         df = pd.DataFrame.from_records(response.json()["forecast"])

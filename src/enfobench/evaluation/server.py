@@ -26,29 +26,35 @@ def server_factory(model: Model) -> FastAPI:
         """Return information of installed packages and their versions."""
         return environment
 
-    @app.post("/predict")
-    async def predict(
+    @app.post("/forecast")
+    async def forecast(
         horizon: int,
-        y: Annotated[bytes, File()],
-        # X: Annotated[bytes, File()],
+        target: Annotated[bytes, File()],
+        past_covariates: Annotated[Optional[bytes], File()] = None,
+        future_covariates: Annotated[Optional[bytes], File()] = None,
         level: Optional[List[int]] = Query(None),
     ):
-        y_df = pd.read_parquet(io.BytesIO(y))
-        # X_df = pd.read_parquet(io.BytesIO(X))
+        target_df = pd.read_parquet(io.BytesIO(target))
+        past_covariates_df = (
+            pd.read_parquet(io.BytesIO(past_covariates)) if past_covariates is not None else None
+        )
+        future_covariates_df = (
+            pd.read_parquet(io.BytesIO(future_covariates))
+            if future_covariates is not None
+            else None
+        )
 
-        y_df["ds"] = pd.to_datetime(y_df["ds"])
-        y = y_df.set_index("ds").y
-
-        forecast = model.predict(
-            h=horizon,
-            y=y,
-            # X=X_df,
+        forecast_df = model.forecast(
+            horizon=horizon,
+            target=target_df,
+            past_covariates=past_covariates_df,
+            future_covariates=future_covariates_df,
             level=level,
         )
-        forecast.fillna(0, inplace=True)
+        forecast_df.fillna(0, inplace=True)
 
         response = {
-            "forecast": jsonable_encoder(forecast.to_dict(orient="records")),
+            "forecast": jsonable_encoder(forecast_df.to_dict(orient="records")),
         }
         return JSONResponse(
             content=response,

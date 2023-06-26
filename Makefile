@@ -1,4 +1,4 @@
-.PHONY: install clean lint format tests
+.PHONY: install clean format lint tests build publish publish-test
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -23,18 +23,18 @@ clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
 
-## Lint using ruff, mypy, black, and isort
-lint:
-	mypy src
-	ruff src tests
-	black src tests --check
-	isort src tests --check-only
-
 ## Format using black
 format:
 	ruff src tests --fix
 	black src tests
 	isort src tests
+
+## Lint using ruff, mypy, black, and isort
+lint: format
+	mypy src
+	ruff src tests
+	black src tests --check
+	isort src tests --check-only
 
 ## Run pytest with coverage
 tests:
