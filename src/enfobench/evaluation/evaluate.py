@@ -212,7 +212,7 @@ def cross_validate(
 
         forecast = model.forecast(
             horizon_length,
-            target=history,
+            history=history,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             level=level,

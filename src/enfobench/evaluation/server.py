@@ -29,12 +29,12 @@ def server_factory(model: Model) -> FastAPI:
     @app.post("/forecast")
     async def forecast(
         horizon: int,
-        target: Annotated[bytes, File()],
+        history: Annotated[bytes, File()],
         past_covariates: Annotated[Optional[bytes], File()] = None,
         future_covariates: Annotated[Optional[bytes], File()] = None,
         level: Optional[List[int]] = Query(None),
     ):
-        target_df = pd.read_parquet(io.BytesIO(target))
+        history_df = pd.read_parquet(io.BytesIO(history))
         past_covariates_df = (
             pd.read_parquet(io.BytesIO(past_covariates)) if past_covariates is not None else None
         )
@@ -46,7 +46,7 @@ def server_factory(model: Model) -> FastAPI:
 
         forecast_df = model.forecast(
             horizon=horizon,
-            target=target_df,
+            history=history_df,
             past_covariates=past_covariates_df,
             future_covariates=future_covariates_df,
             level=level,

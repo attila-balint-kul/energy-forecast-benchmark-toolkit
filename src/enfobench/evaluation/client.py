@@ -38,7 +38,7 @@ class ForecastClient:
     def forecast(
         self,
         horizon: int,
-        target: pd.DataFrame,
+        history: pd.DataFrame,
         past_covariates: Optional[pd.DataFrame] = None,
         future_covariates: Optional[pd.DataFrame] = None,
         level: Optional[List[int]] = None,
@@ -50,7 +50,7 @@ class ForecastClient:
             params["level"] = level
 
         files = {
-            "target": to_buffer(target),
+            "history": to_buffer(history),
         }
         if past_covariates is not None:
             files["past_covariates"] = to_buffer(past_covariates)

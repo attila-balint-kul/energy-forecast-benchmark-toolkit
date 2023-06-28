@@ -22,17 +22,17 @@ class TestModel:
     def forecast(
         self,
         horizon: int,
-        target,
+        history,
         past_covariates=None,
         future_covariates=None,
         level=None,
         **kwargs,
     ):
-        index = create_forecast_index(target, horizon)
+        index = create_forecast_index(history, horizon)
         return pd.DataFrame(
             data={
                 "ds": index,
-                "yhat": np.full(horizon, fill_value=target["y"].mean()) + self.param1,
+                "yhat": np.full(horizon, fill_value=history["y"].mean()) + self.param1,
             }
         )
 

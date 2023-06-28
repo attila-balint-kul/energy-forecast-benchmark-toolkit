@@ -41,7 +41,7 @@ class Model(Protocol):
     def forecast(
         self,
         horizon: int,
-        target: pd.DataFrame,
+        history: pd.DataFrame,
         past_covariates: Optional[pd.DataFrame] = None,
         future_covariates: Optional[pd.DataFrame] = None,
         level: Optional[List[int]] = None,

@@ -40,7 +40,7 @@ def test_environment_endpoint(forecast_client):
 def test_forecast_endpoint(forecast_client):
     horizon = 24
     target_index = pd.date_range(start="2020-01-01", end="2021-01-01", freq="1H")
-    target_df = pd.DataFrame(
+    history_df = pd.DataFrame(
         data={
             "y": np.random.normal(size=len(target_index)),
             "ds": target_index,
@@ -53,7 +53,7 @@ def test_forecast_endpoint(forecast_client):
             "horizon": horizon,
         },
         files={
-            "target": to_buffer(target_df),
+            "history": to_buffer(history_df),
         },
     )
     assert response.status_code == 200
