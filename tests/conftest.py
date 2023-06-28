@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from enfobench.evaluation import ForecasterType, ModelInfo
-from enfobench.utils import create_forecast_index
+from enfobench.evaluation.utils import create_forecast_index
 
 
 class TestModel:
@@ -43,7 +43,7 @@ def model():
 
 
 @pytest.fixture(scope="session")
-def target() -> pd.Series:
+def target() -> pd.DataFrame:
     index = pd.date_range("2020-01-01", "2020-02-01", freq="30T")
     y = pd.Series(np.random.random(len(index)), index=index)
     return y

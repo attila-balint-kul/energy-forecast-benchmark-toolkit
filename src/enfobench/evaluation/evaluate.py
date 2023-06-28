@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from enfobench.evaluation.client import ForecastClient
 from enfobench.evaluation.protocols import Dataset, Model
-from enfobench.utils import steps_in_horizon
+from enfobench.evaluation.utils import steps_in_horizon
 
 
 def evaluate_metric_on_forecast(forecast: pd.DataFrame, metric: Callable) -> float:

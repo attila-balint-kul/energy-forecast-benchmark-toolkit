@@ -27,17 +27,21 @@ pip install enfobench
 
 ## Usage
 
-Import your dataset and make sure that the timestamp column in named 'ds' and the target values named 'y'.
+Load your own data and create a dataset.
 
 ```python
 import pandas as pd
 
+from enfobench.evaluation import Dataset
+
 # Load your dataset and make sure that the timestamp column in named 'ds' and the target values named 'y'
-data = (
-    pd.read_csv("../path/to/your/data.csv")
-    .rename(columns={"timestamp": "ds", "value": "y"})
+data = pd.read_csv("../path/to/your/data.csv", parse_dates=['timestamp'], index_col='timestamp')
+covariates = data.drop(columns=['target_column'])
+
+dataset = Dataset(
+    target=data['target_column'],
+    covariates=covariates,
 )
-y = data.set_index("ds")["y"]
 ```
 
 You can perform a cross validation on any model locally that adheres to the `enfobench.Model` protocol.
@@ -52,11 +56,11 @@ model = MyModel()
 # Run cross validation on your model
 cv_results = cross_validate(
     model,
+    dataset,
     start_date=pd.Timestamp("2018-01-01"),
     end_date=pd.Timestamp("2018-01-31"),
     horizon=pd.Timedelta("24 hours"),
     step=pd.Timedelta("1 day"),
-    y=y,
 )
 ```
 
@@ -71,11 +75,11 @@ client = ForecastClient(host='localhost', port=3000)
 # Run cross validation on your model
 cv_results = cross_validate(
     client,
+    dataset,
     start_date=pd.Timestamp("2018-01-01"),
     end_date=pd.Timestamp("2018-01-31"),
     horizon=pd.Timedelta("24 hours"),
     step=pd.Timedelta("1 day"),
-    y=y,
 )
 ```
 
@@ -89,7 +93,7 @@ from enfobench.evaluation.metrics import (
 )
 
 # Merge the cross validation results with the original data
-forecasts = cv_results.merge(data, on="ds", how="left")
+forecasts = cv_results.merge(dataset.target, on="ds", how="left")
 
 metrics = evaluate_metrics_on_forecasts(
     forecasts,
