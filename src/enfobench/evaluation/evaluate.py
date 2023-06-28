@@ -70,7 +70,7 @@ def evaluate_metric_on_forecasts(forecasts: pd.DataFrame, metric: Callable) -> p
     """
     metrics = {
         cutoff: evaluate_metric_on_forecast(group_df, metric)
-        for cutoff, group_df in forecasts.groupby("cutoff")
+        for cutoff, group_df in forecasts.groupby("cutoff_date")
     }
     metrics_df = pd.DataFrame.from_dict(metrics, orient="index", columns=["value"])
     return metrics_df
