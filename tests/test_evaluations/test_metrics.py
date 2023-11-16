@@ -42,13 +42,25 @@ def test_metric_raises_with_empty_array(metric):
         assert metric(np.array([]), np.array([1, 2, 3])) == 0
 
 
-def test_mean_absolute_error():
-    assert mean_absolute_error(np.array([1, 2, 3]), np.array([1, 2, 3])) == 0.0
-    assert mean_absolute_error(np.array([1, 2, 3]), np.array([2, 3, 4])) == 1.0
-    assert mean_absolute_error(np.array([1, 2, 3]), np.array([0, 1, 2])) == 1.0
+@pytest.mark.parametrize(
+    "a,b,value",
+    [
+        (np.array([1, 2, 3]), np.array([1, 2, 3]), 0.0),
+        (np.array([1, 2, 3]), np.array([2, 3, 4]), 1.0),
+        (np.array([1, 2, 3]), np.array([0, 1, 2]), 1.0),
+    ],
+)
+def test_mean_absolute_error(a, b, value):
+    assert mean_absolute_error(a, b) == value
 
 
-def test_mean_bias_error():
-    assert mean_bias_error(np.array([1, 2, 3]), np.array([1, 2, 3])) == 0.0
-    assert mean_bias_error(np.array([1, 2, 3]), np.array([2, 3, 4])) == 1.0
-    assert mean_bias_error(np.array([1, 2, 3]), np.array([0, 1, 2])) == -1.0
+@pytest.mark.parametrize(
+    "a,b,value",
+    [
+        (np.array([1, 2, 3]), np.array([1, 2, 3]), 0.0),
+        (np.array([1, 2, 3]), np.array([2, 3, 4]), 1.0),
+        (np.array([1, 2, 3]), np.array([0, 1, 2]), -1.0),
+    ],
+)
+def test_mean_bias_error(a, b, value):
+    assert mean_bias_error(a, b) == value

@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
 
+import enfobench.dataset.utils
 from enfobench.evaluation import utils
 
 
@@ -24,9 +25,9 @@ def test_steps_in_horizon_raises_with_non_multiple_horizon():
 
 
 def test_create_forecast_index(target):
-    history = target.to_frame("y").rename_axis("ds").reset_index()
+    history = target
     horizon = 96
-    last_date = history["ds"].iloc[-1]
+    last_date = history.index[-1]
 
     index = utils.create_forecast_index(history, horizon)
 
@@ -37,13 +38,13 @@ def test_create_forecast_index(target):
 
 
 def test_create_perfect_forecasts_from_covariates(covariates):
-    forecasts = utils.create_perfect_forecasts_from_covariates(
+    forecasts = enfobench.dataset.utils.create_perfect_forecasts_from_covariates(
         covariates,
         horizon=pd.Timedelta("7 days"),
         step=pd.Timedelta("1D"),
     )
 
     assert isinstance(forecasts, pd.DataFrame)
-    assert "ds" in forecasts.columns
+    assert "timestamp" in forecasts.columns
     assert "cutoff_date" in forecasts.columns
     assert all(col in forecasts.columns for col in covariates.columns)

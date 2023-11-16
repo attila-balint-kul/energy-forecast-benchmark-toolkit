@@ -1,36 +1,35 @@
 import io
-from typing import Dict, List, Optional, Union
+from http import HTTPStatus
 
 import pandas as pd
 import requests
 
-from enfobench.evaluation.protocols import EnvironmentInfo, ModelInfo
+from enfobench.evaluation.model import ModelInfo
+from enfobench.evaluation.server import EnvironmentInfo
 
 
 def to_buffer(df: pd.DataFrame) -> io.BytesIO:
     buffer = io.BytesIO()
-    df.to_parquet(buffer, index=False)
+    df.to_parquet(buffer, index=True)
     buffer.seek(0)
     return buffer
 
 
 class ForecastClient:
-    def __init__(
-        self, host: str = "localhost", port: int = 3000, secure: bool = False, client=None
-    ):
-        self.base_url = f"{'https' if secure else 'http'}://{host}:{port}"
+    def __init__(self, host: str = "localhost", port: int = 3000, *, use_https: bool = False, client=None):
+        self.base_url = f"{'https' if use_https else 'http'}://{host}:{port}"
         self._session = requests.Session() if client is None else client
 
     def info(self) -> ModelInfo:
         response = self._session.get(f"{self.base_url}/info")
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             response.raise_for_status()
 
         return ModelInfo(**response.json())
 
     def environment(self) -> EnvironmentInfo:
         response = self._session.get(f"{self.base_url}/environment")
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             response.raise_for_status()
 
         return EnvironmentInfo(**response.json())
@@ -39,11 +38,11 @@ class ForecastClient:
         self,
         horizon: int,
         history: pd.DataFrame,
-        past_covariates: Optional[pd.DataFrame] = None,
-        future_covariates: Optional[pd.DataFrame] = None,
-        level: Optional[List[int]] = None,
+        past_covariates: pd.DataFrame | None = None,
+        future_covariates: pd.DataFrame | None = None,
+        level: list[int] | None = None,
     ) -> pd.DataFrame:
-        params: Dict[str, Union[int, List[int]]] = {
+        params: dict[str, int | list[int]] = {
             "horizon": horizon,
         }
         if level is not None:
@@ -62,9 +61,10 @@ class ForecastClient:
             params=params,
             files=files,
         )
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             response.raise_for_status()
 
         df = pd.DataFrame.from_records(response.json()["forecast"])
-        df["ds"] = pd.to_datetime(df["ds"])
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df.set_index("timestamp", inplace=True)
         return df

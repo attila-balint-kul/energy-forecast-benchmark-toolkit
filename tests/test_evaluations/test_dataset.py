@@ -1,8 +1,9 @@
 from random import randrange
 
 import pandas as pd
+import pytest
 
-from enfobench.evaluation.protocols import Dataset
+from enfobench.dataset import Dataset
 
 
 def random_date(start: pd.Timestamp, end: pd.Timestamp, resolution: int = 1) -> pd.Timestamp:
@@ -12,114 +13,49 @@ def random_date(start: pd.Timestamp, end: pd.Timestamp, resolution: int = 1) -> 
     """
     delta = end - start
     int_delta = int(delta.total_seconds())
-    random_second = randrange(0, int_delta, resolution)
+    random_second = randrange(0, int_delta, resolution)  # noqa: S311
     return start + pd.Timedelta(seconds=random_second)
 
 
-def test_univariate_second(target):
+@pytest.mark.parametrize("resolution", [1, 60, 900, 3600])
+def test_get_history(target, resolution):
     ds = Dataset(target=target)
+    cutoff_date = random_date(ds._first_available_target_date, ds._last_available_target_date, resolution=resolution)
 
-    cutoff_date = random_date(ds.start_date, ds.end_date)
-    print(cutoff_date)
     history = ds.get_history(cutoff_date)
-    assert (history.ds <= cutoff_date).all()
+
+    assert history.index.name == "timestamp"
+    assert isinstance(history.index, pd.DatetimeIndex)
+    assert "y" in history.columns
+    assert len(history.columns) == 1
+    assert (history.index <= cutoff_date).all()
 
 
-def test_univariate_minute(target):
-    ds = Dataset(target=target)
-    cutoff_date = random_date(ds.start_date, ds.end_date, resolution=60)
-    print(cutoff_date)
-    history = ds.get_history(cutoff_date)
-    assert (history.ds <= cutoff_date).all()
+@pytest.mark.parametrize("resolution", [1, 60, 900, 3600])
+def test_get_past_covariates(target, covariates, resolution):
+    ds = Dataset(target=target, past_covariates=covariates)
+    cutoff_date = random_date(ds._first_available_target_date, ds._last_available_target_date, resolution=resolution)
 
-
-def test_univariate_quarter(target):
-    ds = Dataset(target=target)
-    cutoff_date = random_date(ds.start_date, ds.end_date, resolution=900)
-    print(cutoff_date)
-    history = ds.get_history(cutoff_date)
-    assert (history.ds <= cutoff_date).all()
-
-
-def test_univariate_hour(target):
-    ds = Dataset(target=target)
-    cutoff_date = random_date(ds.start_date, ds.end_date, resolution=3600)
-    print(cutoff_date)
-    history = ds.get_history(cutoff_date)
-    assert (history.ds <= cutoff_date).all()
-
-
-def test_multivariate_second(target, covariates):
-    ds = Dataset(target=target, covariates=covariates)
-
-    cutoff_date = random_date(ds.start_date, ds.end_date)
-    print(cutoff_date)
     past_cov = ds.get_past_covariates(cutoff_date)
-    assert (past_cov.ds <= cutoff_date).all()
+
+    assert past_cov.index.name == "timestamp"
+    assert isinstance(past_cov.index, pd.DatetimeIndex)
+    for col in covariates.columns:
+        assert col in past_cov.columns
+    assert (past_cov.index <= cutoff_date).all()
 
 
-def test_multivariate_minute(target, covariates):
-    ds = Dataset(target=target, covariates=covariates)
+@pytest.mark.parametrize("resolution", [1, 60, 900, 3600])
+def test_get_future_covariates(target, covariates, external_forecasts, resolution):
+    ds = Dataset(target=target, past_covariates=covariates, future_covariates=external_forecasts)
+    cutoff_date = random_date(ds._first_available_target_date, ds._last_available_target_date, resolution=resolution)
 
-    cutoff_date = random_date(ds.start_date, ds.end_date, resolution=60)
-    print(cutoff_date)
-    past_cov = ds.get_past_covariates(cutoff_date)
-    assert (past_cov.ds <= cutoff_date).all()
-
-
-def test_multivariate_quarter(target, covariates):
-    ds = Dataset(target=target, covariates=covariates)
-
-    cutoff_date = random_date(ds.start_date, ds.end_date, resolution=900)
-    print(cutoff_date)
-    past_cov = ds.get_past_covariates(cutoff_date)
-    assert (past_cov.ds <= cutoff_date).all()
-
-
-def test_multivariate_hour(target, covariates):
-    ds = Dataset(target=target, covariates=covariates)
-
-    cutoff_date = random_date(ds.start_date, ds.end_date, resolution=3600)
-    print(cutoff_date)
-    past_cov = ds.get_past_covariates(cutoff_date)
-    assert (past_cov.ds <= cutoff_date).all()
-
-
-def test_external_forecasts_second(target, covariates, external_forecasts):
-    ds = Dataset(target=target, covariates=covariates, external_forecasts=external_forecasts)
-
-    cutoff_date = random_date(ds.start_date, ds.end_date)
-    print(cutoff_date)
     future_cov = ds.get_future_covariates(cutoff_date)
+
+    assert future_cov.index.name == "timestamp"
+    assert isinstance(future_cov.index, pd.DatetimeIndex)
+    for col in external_forecasts.columns:
+        if col not in ["timestamp", "cutoff_date"]:
+            assert col in future_cov.columns
     assert (future_cov.cutoff_date <= cutoff_date).all()
-    assert (future_cov.ds > cutoff_date).all()
-
-
-def test_external_forecasts_minute(target, covariates, external_forecasts):
-    ds = Dataset(target=target, covariates=covariates, external_forecasts=external_forecasts)
-
-    cutoff_date = random_date(ds.start_date, ds.end_date, resolution=60)
-    print(cutoff_date)
-    future_cov = ds.get_future_covariates(cutoff_date)
-    assert (future_cov.cutoff_date <= cutoff_date).all()
-    assert (future_cov.ds > cutoff_date).all()
-
-
-def test_external_forecasts_quarter(target, covariates, external_forecasts):
-    ds = Dataset(target=target, covariates=covariates, external_forecasts=external_forecasts)
-
-    cutoff_date = random_date(ds.start_date, ds.end_date, resolution=900)
-    print(cutoff_date)
-    future_cov = ds.get_future_covariates(cutoff_date)
-    assert (future_cov.cutoff_date <= cutoff_date).all()
-    assert (future_cov.ds > cutoff_date).all()
-
-
-def test_external_forecasts_hour(target, covariates, external_forecasts):
-    ds = Dataset(target=target, covariates=covariates, external_forecasts=external_forecasts)
-
-    cutoff_date = random_date(ds.start_date, ds.end_date, resolution=3600)
-    print(cutoff_date)
-    future_cov = ds.get_future_covariates(cutoff_date)
-    assert (future_cov.cutoff_date <= cutoff_date).all()
-    assert (future_cov.ds > cutoff_date).all()
+    assert (future_cov.index > cutoff_date).all()

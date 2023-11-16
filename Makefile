@@ -1,4 +1,4 @@
-.PHONY: install clean format lint tests build publish publish-test
+.PHONY: install clean lint style format test build publish publish-test
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -7,45 +7,55 @@
 PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 PROJECT_NAME = energy-forecat-benchmark-toolkit
 PACKAGE_NAME = enfobench
+PYTHON_INTERPRETER = python3
 
 #################################################################################
 # COMMANDS                                                                      #
 #################################################################################
 
+## Create python virtual environment
+venv/bin/python:
+	( \
+		$(PYTHON_INTERPRETER) -m venv $(PROJECT_DIR)/venv; \
+		source $(PROJECT_DIR)/venv/bin/activate; \
+		pip install --upgrade pip; \
+	)
+
 ## Install project dependencies
-install:
-	pip install -U pip
-	pip install -e ."[test,dev]"
-	mypy --install-types
+install: venv/bin/python
+	(\
+		source $(PROJECT_DIR)/venv/bin/activate; \
+		pip install -e .; \
+    )
 
 ## Delete all compiled Python files
 clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
 
+## Lint using ruff, mypy, black, and isort
+lint:
+	hatch run lint:all
+
+
+## Check style using ruff, black, and isort
+style:
+	hatch run lint:style
+
 ## Format using black
 format:
-	ruff src tests --fix
-	black src tests
-	isort src tests
-
-## Lint using ruff, mypy, black, and isort
-lint: format
-	mypy src
-	ruff src tests
-	black src tests --check
-	isort src tests --check-only
+	hatch run lint:fmt
 
 ## Run pytest with coverage
-tests:
-	pytest src tests
+test:
+	hatch run cov
 
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
 
 ## Build source distribution and wheel
-build: lint tests
+build: style
 	hatch build
 
 ## Upload source distribution and wheel to PyPI

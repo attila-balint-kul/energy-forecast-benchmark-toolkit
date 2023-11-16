@@ -2,13 +2,13 @@ import pandas as pd
 import pytest
 from starlette.testclient import TestClient
 
+from enfobench.dataset import Dataset
 from enfobench.evaluation import (
-    Dataset,
     ForecastClient,
     cross_validate,
-    generate_cutoff_dates,
 )
 from enfobench.evaluation.server import server_factory
+from enfobench.evaluation.utils import generate_cutoff_dates
 
 
 @pytest.mark.parametrize(
@@ -89,7 +89,7 @@ def test_cross_validate_univariate_locally(model, target):
     )
 
     assert isinstance(forecasts, pd.DataFrame)
-    assert "ds" in forecasts.columns
+    assert "timestamp" in forecasts.columns
     assert "yhat" in forecasts.columns
     assert "cutoff_date" in forecasts.columns
 
@@ -109,7 +109,7 @@ def test_cross_validate_univariate_via_server(model, target):
     )
 
     assert isinstance(forecasts, pd.DataFrame)
-    assert "ds" in forecasts.columns
+    assert "timestamp" in forecasts.columns
     assert "yhat" in forecasts.columns
     assert "cutoff_date" in forecasts.columns
 
@@ -125,7 +125,7 @@ def test_cross_validate_multivariate_locally(model, target, covariates, external
     )
 
     assert isinstance(forecasts, pd.DataFrame)
-    assert "ds" in forecasts.columns
+    assert "timestamp" in forecasts.columns
     assert "yhat" in forecasts.columns
     assert "cutoff_date" in forecasts.columns
 
@@ -145,6 +145,6 @@ def test_cross_validate_multivariate_via_server(model, target, covariates, exter
     )
 
     assert isinstance(forecasts, pd.DataFrame)
-    assert "ds" in forecasts.columns
+    assert "timestamp" in forecasts.columns
     assert "yhat" in forecasts.columns
     assert "cutoff_date" in forecasts.columns

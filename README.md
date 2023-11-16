@@ -32,22 +32,65 @@ Load your own data and create a dataset.
 ```python
 import pandas as pd
 
-from enfobench.evaluation import Dataset
+from enfobench.dataset import Dataset
 
-# Load your dataset and make sure that the timestamp column in named 'ds' and the target values named 'y'
+# Load your datasets
 data = pd.read_csv("../path/to/your/data.csv", parse_dates=['timestamp'], index_col='timestamp')
-covariates = data.drop(columns=['target_column'])
+
+# Create a target DataFrame that has a pd.DatetimeIndex and a column named 'y'
+target = data.loc[:, ['target_column']].rename(columns={'target_column': 'y'})
+
+# Add covariates that can be used as past covariates. This also has to have a pd.DatetimeIndex
+past_covariates = data.loc[:, ['covariate_1', 'covariate_2']]
+
+# As sometimes it can be challenging to access historical forecasts to use future covariates, 
+# the package also has a helper function to create perfect historical forecasts from the past covariates.
+from enfobench.dataset.utils import create_perfect_forecasts_from_covariates
+
+# The example below creates simulated perfect historical forecasts with a horizon of 24 hours and a step of 1 day.
+future_covariates = create_perfect_forecasts_from_covariates(
+    past_covariates,
+    horizon=pd.Timedelta("24 hours"),
+    step=pd.Timedelta("1 day"),
+)
 
 dataset = Dataset(
     target=data['target_column'],
-    covariates=covariates,
+    past_covariates=past_covariates,
+    future_covariates=future_covariates,
 )
 ```
+
+The package integrates with the HuggingFace Dataset ['attila-balint-kul/electricity-demand'](https://huggingface.co/datasets/attila-balint-kul/electricity-demand). 
+To use this, just download all the files from the data folder to your computer.
+
+```python
+from enfobench.dataset import Dataset, DemandDataset
+
+# Load the dataset from the folder that you downloaded the files to.
+ds = DemandDataset("/path/to/the/dataset/folder/that/contains/all/subsets")
+
+# List all meter ids
+ds.metadata_subset.list_unique_ids()
+
+# Get dataset for a specific meter id
+target, past_covariates, metadata = ds.get_data_by_unique_id("unique_id_of_the_meter")
+
+# Create a dataset
+dataset = Dataset(
+    target=target,
+    past_covariates=past_covariates,
+    future_covariates=None,
+    metadata=metadata
+)
+```
+
 
 You can perform a cross validation on any model locally that adheres to the `enfobench.Model` protocol.
 
 ```python
 import MyModel
+import pandas as pd
 from enfobench.evaluation import cross_validate
 
 # Import your model and instantiate it
@@ -64,9 +107,11 @@ cv_results = cross_validate(
 )
 ```
 
-You can use the same crossvalidation interface with your model served behind an API.
+You can use the same crossvalidation interface with your model served behind an API. 
+To make this simple, both a client and a server are provided.
 
 ```python
+import pandas as pd
 from enfobench.evaluation import cross_validate, ForecastClient
 
 # Import your model and instantiate it
@@ -83,20 +128,21 @@ cv_results = cross_validate(
 )
 ```
 
-The package also collects common metrics for you that you can quickly evaluate on your results.
+The package also collects common metrics used in forecasting.
 
 ```python
 from enfobench.evaluation import evaluate_metrics_on_forecasts
 
 from enfobench.evaluation.metrics import (
-    mean_bias_error, mean_absolute_error, mean_squared_error, root_mean_squared_error,
+    mean_bias_error, 
+    mean_absolute_error, 
+    mean_squared_error, 
+    root_mean_squared_error,
 )
 
-# Merge the cross validation results with the original data
-forecasts = cv_results.merge(dataset.target, on="ds", how="left")
-
+# Simply pass in the cross validation results and the metrics you want to evaluate.
 metrics = evaluate_metrics_on_forecasts(
-    forecasts,
+    cv_results,
     metrics={
         "mean_bias_error": mean_bias_error,
         "mean_absolute_error": mean_absolute_error,
@@ -104,6 +150,19 @@ metrics = evaluate_metrics_on_forecasts(
         "root_mean_squared_error": root_mean_squared_error,
     },
 )
+```
+
+In order to serve your model behind an API, you can use the built in server factory.
+
+```python
+import uvicorn
+from enfobench.evaluation.server import server_factory
+
+model = MyModel()
+
+# Create a server that serves your model
+server = server_factory(model)
+uvicorn.run(server, port=3000)
 ```
 
 ## Contributing
@@ -121,4 +180,4 @@ Submit a pull request describing your changes.
 
 ## License
 
-BSD 3-Clause License
+BSD 2-Clause License
