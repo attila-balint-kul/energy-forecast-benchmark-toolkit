@@ -46,8 +46,8 @@ dependencies = [
 
 
 [project.urls]
-Documentation = "https://github.com/attila-baline-kul/energy-forecast-benchmark-toolkit#readme"
-Issues = "https://github.com/attila-baline-kul/energy-forecast-benchmark-toolkit/issues"
+Documentation = "https://github.com/attila-balint-kul/energy-forecast-benchmark-toolkit#readme"
+Issues = "https://github.com/attila-balint-kul/energy-forecast-benchmark-toolkit/issues"
 Source = "https://github.com/attila-balint-kul/energy-forecast-benchmark-toolkit"
 
 [tool.hatch.version]
