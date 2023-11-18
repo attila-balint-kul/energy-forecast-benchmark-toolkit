@@ -89,3 +89,48 @@ def external_forecasts() -> pd.DataFrame:
         forecasts.append(forecast)
 
     return pd.concat(forecasts, ignore_index=True)
+
+
+@pytest.fixture(scope="session")
+def clean_forecasts() -> pd.DataFrame:
+    cutoff_dates = pd.date_range("2020-01-01", "2021-01-01", freq="D")
+
+    forecasts = []
+    for cutoff_date in cutoff_dates:
+        index = pd.date_range(cutoff_date + pd.Timedelta(hours=1), cutoff_date + pd.Timedelta(hours=25), freq="H")
+        forecast = pd.DataFrame(
+            data={
+                "timestamp": index,
+                "yhat": np.random.random(len(index)),
+                "y": np.random.random(len(index)),
+            },
+        )
+        forecast["cutoff_date"] = cutoff_date
+        forecasts.append(forecast)
+
+    forecast_df = pd.concat(forecasts, ignore_index=True)
+    assert not forecast_df.isna().any(axis=None)
+    return forecast_df
+
+
+@pytest.fixture(scope="session")
+def forecasts_with_missing_values() -> pd.DataFrame:
+    cutoff_dates = pd.date_range("2020-01-01", "2021-01-01", freq="D")
+
+    forecasts = []
+    for cutoff_date in cutoff_dates:
+        index = pd.date_range(cutoff_date + pd.Timedelta(hours=1), cutoff_date + pd.Timedelta(hours=25), freq="H")
+        forecast = pd.DataFrame(
+            data={
+                "timestamp": index,
+                "yhat": np.random.random(len(index)),
+                "y": np.random.random(len(index)),
+            },
+        )
+        forecast["cutoff_date"] = cutoff_date
+        forecasts.append(forecast)
+
+    forecast_df = pd.concat(forecasts, ignore_index=True)
+    forecast_df.loc[forecast_df["y"] <= 0.3, "y"] = np.nan
+    assert forecast_df.isna().any(axis=None)
+    return forecast_df

@@ -1,6 +1,8 @@
 import warnings
 from collections.abc import Callable
+from typing import Any
 
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -10,8 +12,8 @@ from enfobench.evaluation.model import Model
 from enfobench.evaluation.utils import generate_cutoff_dates, steps_in_horizon
 
 
-def evaluate_metric_on_forecast(forecast: pd.DataFrame, metric: Callable) -> float:
-    """Evaluate a single metric on a single forecast.
+def _compute_metric(forecast: pd.DataFrame, metric: Callable) -> float:
+    """Compute a single metric value.
 
     Args:
         forecast: Forecast to evaluate.
@@ -20,59 +22,65 @@ def evaluate_metric_on_forecast(forecast: pd.DataFrame, metric: Callable) -> flo
     Returns:
         Metric value.
     """
-    _nonempty_df = forecast.dropna(subset=["y"])
-    metric_value = metric(_nonempty_df.y, _nonempty_df.yhat)
+    metric_value = metric(forecast.y, forecast.yhat)
     return metric_value
 
 
-def evaluate_metrics_on_forecast(forecast: pd.DataFrame, metrics: dict[str, Callable]) -> dict[str, float]:
-    """Evaluate multiple metrics on a single forecast.
+def _compute_metrics(forecast: pd.DataFrame, metrics: dict[str, Callable]) -> dict[str, float]:
+    """Compute multiple metric values.
 
     Args:
         forecast: Forecast to evaluate.
         metrics: Metric to evaluate.
 
     Returns:
-        Metric value.
+        Metrics dictionary with metric names as keys and metric values as values.
     """
-    metric_values = {
-        metric_name: evaluate_metric_on_forecast(forecast, metric) for metric_name, metric in metrics.items()
-    }
+    metric_values = {metric_name: _compute_metric(forecast, metric) for metric_name, metric in metrics.items()}
     return metric_values
 
 
-def evaluate_metric_on_forecasts(forecasts: pd.DataFrame, metric: Callable) -> pd.DataFrame:
-    """Evaluate a single metric on a set of forecasts made at different cutoff points.
-
-    Args:
-        forecasts: Forecasts to evaluate.
-        metric: Metric to evaluate.
-
-    Returns:
-        Metric values for each cutoff with their weight.
-    """
-    metrics = {
-        cutoff: evaluate_metric_on_forecast(group_df, metric) for cutoff, group_df in forecasts.groupby("cutoff_date")
-    }
-    metrics_df = pd.DataFrame.from_dict(metrics, orient="index", columns=["value"])
-    return metrics_df
+def _evaluate_group(forecasts: pd.DataFrame, metrics: dict[str, Callable], index: Any) -> pd.DataFrame:
+    clean_df = forecasts.dropna(subset=["y"])
+    if clean_df.empty:
+        ratio = 0.0
+        metrics = {metric_name: np.nan for metric_name in metrics}
+    else:
+        ratio = len(clean_df) / len(forecasts)
+        metrics = _compute_metrics(clean_df, metrics)
+    df = pd.DataFrame({**metrics, "weight": ratio}, index=[index])
+    return df
 
 
-def evaluate_metrics_on_forecasts(forecasts: pd.DataFrame, metrics: dict[str, Callable]) -> pd.DataFrame:
-    """Evaluate multiple metrics on a set of forecasts made at different cutoff points.
+def evaluate_metrics(
+    forecasts: pd.DataFrame,
+    metrics: dict[str, Callable],
+    *,
+    groupby: str | None = None,
+) -> pd.DataFrame:
+    """Evaluate multiple metrics on forecasts.
 
     Args:
         forecasts: Forecasts to evaluate.
         metrics: Metric to evaluate.
+        groupby: Column to group forecasts by. (Optional, if not provided, forecasts will not be grouped.)
 
     Returns:
         Metric values for each cutoff with their weight.
     """
-    metric_dfs = [
-        evaluate_metric_on_forecasts(forecasts, metric_func).rename(columns={"value": metric_name})
-        for metric_name, metric_func in metrics.items()
-    ]
-    metrics_df = pd.concat(metric_dfs, axis=1)
+    if groupby is None:
+        return _evaluate_group(forecasts, metrics, 0)
+
+    if groupby not in forecasts.columns:
+        msg = f"Groupby column {groupby} not found in forecasts."
+        raise ValueError(msg)
+
+    metrics_df = pd.concat(
+        [_evaluate_group(group_df, metrics, value) for value, group_df in tqdm(forecasts.groupby(groupby))]
+    )
+
+    metrics_df.rename_axis(groupby, inplace=True)
+    metrics_df.reset_index(inplace=True)
     return metrics_df
 
 

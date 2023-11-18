@@ -131,17 +131,17 @@ cv_results = cross_validate(
 The package also collects common metrics used in forecasting.
 
 ```python
-from enfobench.evaluation import evaluate_metrics_on_forecasts
+from enfobench.evaluation import evaluate_metrics
 
 from enfobench.evaluation.metrics import (
-    mean_bias_error, 
-    mean_absolute_error, 
-    mean_squared_error, 
+    mean_bias_error,
+    mean_absolute_error,
+    mean_squared_error,
     root_mean_squared_error,
 )
 
 # Simply pass in the cross validation results and the metrics you want to evaluate.
-metrics = evaluate_metrics_on_forecasts(
+metrics = evaluate_metrics(
     cv_results,
     metrics={
         "mean_bias_error": mean_bias_error,
