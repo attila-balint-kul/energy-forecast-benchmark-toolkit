@@ -165,6 +165,14 @@ server = server_factory(model)
 uvicorn.run(server, port=3000)
 ```
 
+## Benchmarking
+
+The package also provides a benchmarking framework that can be used to benchmark your model against
+other models. There are some example models in [this repository](https://github.com/attila-balint-kul/energy-forecast-benchmark-examples).
+
+The results of the benchmarking are openly accessible [here](https://wandb.ai/attila-balint-kul/load-forecasting-competition/reports/Enfobench-Dashboard--Vmlldzo2MDM0ODE2#models).
+
+
 ## Contributing
 
 Contributions and feedback are welcome! For major changes, please open an issue first to discuss
