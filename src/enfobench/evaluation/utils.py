@@ -29,10 +29,14 @@ def periods_in_duration(target: pd.DatetimeIndex, duration: timedelta | pd.Timed
 
     first_delta = target[1] - target[0]
     last_delta = target[-1] - target[-2]
-    assert first_delta == last_delta, "Season length is not constant"
+    if first_delta != last_delta:
+        msg = f"Season length is not constant: '{first_delta}' != '{last_delta}'"
+        raise ValueError(msg)
 
     periods = duration / first_delta
-    assert periods.is_integer(), "Season length is not a multiple of the frequency"
+    if not periods.is_integer():
+        msg = f"Season length '{duration}' is not a multiple of the frequency '{first_delta}'"
+        raise ValueError(msg)
     return int(periods)
 
 
