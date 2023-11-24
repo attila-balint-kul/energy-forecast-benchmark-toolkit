@@ -32,7 +32,8 @@ def create_perfect_forecasts_from_covariates(
         forecast = past_covariates.loc[(past_covariates.index > start) & (past_covariates.index <= start + horizon)]
         forecast.rename_axis("timestamp", inplace=True)
         forecast.reset_index(inplace=True)
-        forecast["cutoff_date"] = start.isoformat()  # pd.concat fails if cutoff_date is a Timestamp
+        forecast["cutoff_date"] = pd.to_datetime(start, unit="ns")
+        forecast.set_index(["cutoff_date", "timestamp"], inplace=True)
 
         if len(forecast) == 0:
             warnings.warn(
@@ -45,5 +46,6 @@ def create_perfect_forecasts_from_covariates(
         start += step
 
     forecast_df = pd.concat(forecasts, ignore_index=False)
-    forecast_df["cutoff_date"] = pd.to_datetime(forecast_df["cutoff_date"])  # convert back to Timestamp
+    forecast_df.reset_index(inplace=True)
+    forecast_df.sort_values(by=["cutoff_date", "timestamp"], inplace=True)
     return forecast_df

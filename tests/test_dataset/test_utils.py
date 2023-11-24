@@ -11,6 +11,7 @@ def test_create_perfect_forecasts_from_covariates():
         data=np.random.rand(len(index), 2),
         columns=["covariate_1", "covariate_2"],
     )
+    past_covariates.drop(index[2], inplace=True)
 
     future_covariates = create_perfect_forecasts_from_covariates(
         past_covariates,

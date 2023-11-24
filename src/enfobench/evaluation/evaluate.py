@@ -159,4 +159,5 @@ def cross_validate(
 
     # Merge the forecast with the target
     crossval_df = crossval_df.merge(dataset._target, left_on="timestamp", right_index=True)
+    crossval_df.sort_values(by=["cutoff_date", "timestamp"], inplace=True)
     return crossval_df
