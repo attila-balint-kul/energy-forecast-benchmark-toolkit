@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pandas as pd
 
 
@@ -16,6 +18,21 @@ def steps_in_horizon(horizon: pd.Timedelta, freq: str) -> int:
     if not periods.is_integer():
         msg = f"Horizon {horizon} is not a multiple of the frequency {freq}"
         raise ValueError(msg)
+    return int(periods)
+
+
+def periods_in_duration(target: pd.DatetimeIndex, duration: timedelta | pd.Timedelta | str) -> int:
+    if isinstance(duration, timedelta):
+        duration = pd.Timedelta(duration)
+    elif isinstance(duration, str):
+        duration = pd.Timedelta(duration)
+
+    first_delta = target[1] - target[0]
+    last_delta = target[-1] - target[-2]
+    assert first_delta == last_delta, "Season length is not constant"
+
+    periods = duration / first_delta
+    assert periods.is_integer(), "Season length is not a multiple of the frequency"
     return int(periods)
 
 
