@@ -1,5 +1,4 @@
-Energy  Forecast Benchmark Toolkit
-==============================
+# Energy  Forecast Benchmark Toolkit
 
 [![PyPI version](https://badge.fury.io/py/enfobench.svg)](https://badge.fury.io/py/enfobench)
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
@@ -10,12 +9,22 @@ Energy  Forecast Benchmark Toolkit
 Energy Forecast Benchmark Toolkit is a Python project that aims to provide common tools to
 benchmark forecast models.
 
+---
+
+**Documentation**: https://attila-balint-kul.github.io/energy-forecast-benchmark-toolkit/
+
+**Source code**: https://github.com/attila-balint-kul/energy-forecast-benchmark-toolkit
+
+---
+
 ## Table of Contents
 
 - [Installation](#installation)
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
+
+---
 
 ## Installation
 
@@ -27,45 +36,15 @@ pip install enfobench
 
 ## Usage
 
-Load your own data and create a dataset.
+Download the HuggingFace Dataset ['attila-balint-kul/electricity-demand'](https://huggingface.co/datasets/attila-balint-kul/electricity-demand),
+and download the files from the data folder to your computer.
 
 ```python
 import pandas as pd
 
-from enfobench.dataset import Dataset
-
-# Load your datasets
-data = pd.read_csv("../path/to/your/data.csv", parse_dates=['timestamp'], index_col='timestamp')
-
-# Create a target DataFrame that has a pd.DatetimeIndex and a column named 'y'
-target = data.loc[:, ['target_column']].rename(columns={'target_column': 'y'})
-
-# Add covariates that can be used as past covariates. This also has to have a pd.DatetimeIndex
-past_covariates = data.loc[:, ['covariate_1', 'covariate_2']]
-
-# As sometimes it can be challenging to access historical forecasts to use future covariates, 
-# the package also has a helper function to create perfect historical forecasts from the past covariates.
-from enfobench.dataset.utils import create_perfect_forecasts_from_covariates
-
-# The example below creates simulated perfect historical forecasts with a horizon of 24 hours and a step of 1 day.
-future_covariates = create_perfect_forecasts_from_covariates(
-    past_covariates,
-    horizon=pd.Timedelta("24 hours"),
-    step=pd.Timedelta("1 day"),
-)
-
-dataset = Dataset(
-    target=data['target_column'],
-    past_covariates=past_covariates,
-    future_covariates=future_covariates,
-)
-```
-
-The package integrates with the HuggingFace Dataset ['attila-balint-kul/electricity-demand'](https://huggingface.co/datasets/attila-balint-kul/electricity-demand). 
-To use this, just download all the files from the data folder to your computer.
-
-```python
 from enfobench.dataset import Dataset, DemandDataset
+from enfobench.evaluation import cross_validate, evaluate_metrics
+from enfobench.evaluation.metrics import mean_bias_error, mean_absolute_error, root_mean_squared_error
 
 # Load the dataset from the folder that you downloaded the files to.
 ds = DemandDataset("/path/to/the/dataset/folder/that/contains/all/subsets")
@@ -73,8 +52,11 @@ ds = DemandDataset("/path/to/the/dataset/folder/that/contains/all/subsets")
 # List all meter ids
 ds.metadata_subset.list_unique_ids()
 
+# Get one of the meter ids
+unique_id = ds.metadata_subset.list_unique_ids()[0]
+
 # Get dataset for a specific meter id
-target, past_covariates, metadata = ds.get_data_by_unique_id("unique_id_of_the_meter")
+target, past_covariates, metadata = ds.get_data_by_unique_id(unique_id)
 
 # Create a dataset
 dataset = Dataset(
@@ -83,18 +65,9 @@ dataset = Dataset(
     future_covariates=None,
     metadata=metadata
 )
-```
-
-
-You can perform a cross validation on any model locally that adheres to the `enfobench.Model` protocol.
-
-```python
-import MyModel
-import pandas as pd
-from enfobench.evaluation import cross_validate
 
 # Import your model and instantiate it
-model = MyModel()
+model = MyForecastModel()
 
 # Run cross validation on your model
 cv_results = cross_validate(
@@ -105,72 +78,24 @@ cv_results = cross_validate(
     horizon=pd.Timedelta("24 hours"),
     step=pd.Timedelta("1 day"),
 )
-```
-
-You can use the same crossvalidation interface with your model served behind an API. 
-To make this simple, both a client and a server are provided.
-
-```python
-import pandas as pd
-from enfobench.evaluation import cross_validate, ForecastClient
-
-# Import your model and instantiate it
-client = ForecastClient(host='localhost', port=3000)
-
-# Run cross validation on your model
-cv_results = cross_validate(
-    client,
-    dataset,
-    start_date=pd.Timestamp("2018-01-01"),
-    end_date=pd.Timestamp("2018-01-31"),
-    horizon=pd.Timedelta("24 hours"),
-    step=pd.Timedelta("1 day"),
-)
-```
-
-The package also collects common metrics used in forecasting.
-
-```python
-from enfobench.evaluation import evaluate_metrics
-
-from enfobench.evaluation.metrics import (
-    mean_bias_error,
-    mean_absolute_error,
-    mean_squared_error,
-    root_mean_squared_error,
-)
 
 # Simply pass in the cross validation results and the metrics you want to evaluate.
 metrics = evaluate_metrics(
     cv_results,
     metrics={
-        "mean_bias_error": mean_bias_error,
-        "mean_absolute_error": mean_absolute_error,
-        "mean_squared_error": mean_squared_error,
-        "root_mean_squared_error": root_mean_squared_error,
+        "MBE": mean_bias_error,
+        "MAE": mean_absolute_error,
+        "RMSE": root_mean_squared_error,
     },
 )
 ```
 
-In order to serve your model behind an API, you can use the built in server factory.
-
-```python
-import uvicorn
-from enfobench.evaluation.server import server_factory
-
-model = MyModel()
-
-# Create a server that serves your model
-server = server_factory(model)
-uvicorn.run(server, port=3000)
-```
+To get started with some examples check out the `models` folder and the [examples](https://attila-balint-kul.github.io/energy-forecast-benchmark-toolkit/examples) section of the documentation.
 
 ## Benchmarking
 
-The package also provides a benchmarking framework that can be used to benchmark your model against
-other models. There are some example models in [this repository](https://github.com/attila-balint-kul/energy-forecast-benchmark-examples).
-
-The results of the benchmarking are openly accessible [here](https://wandb.ai/attila-balint-kul/load-forecasting-competition/reports/Enfobench-Dashboard--Vmlldzo2MDM0ODE2#models).
+Once confident in your model, you can submit for evaluation.
+The results of the benchmarks are openly accessible [here](https://wandb.ai/attila-balint-kul/load-forecasting-competition/reports/Enfobench-Dashboard--Vmlldzo2MDM0ODE2#models).
 
 
 ## Contributing
