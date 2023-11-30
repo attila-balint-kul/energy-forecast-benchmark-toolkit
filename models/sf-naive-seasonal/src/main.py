@@ -54,5 +54,6 @@ seasonality = os.getenv("ENFOBENCH_MODEL_SEASONALITY")
 
 # Instantiate your model
 model = SeasonalNaiveModel(seasonality)
+
 # Create a forecast server by passing in your model
 app = server_factory(model)
