@@ -15,6 +15,8 @@ benchmark forecast models.
 
 **Source code**: https://github.com/attila-balint-kul/energy-forecast-benchmark-toolkit
 
+**Dashboard** https://api.wandb.ai/links/attila-balint-kul/duaehj8c
+
 ---
 
 ## Table of Contents
