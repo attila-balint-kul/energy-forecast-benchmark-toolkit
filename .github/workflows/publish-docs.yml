@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - docs/init
 
 permissions:
   contents: write
