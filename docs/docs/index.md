@@ -31,7 +31,7 @@ pip install enfobench
 Load your own data and create a dataset.
 
 ```python
-import pandas as pd  # (1)
+import pandas as pd
 
 from enfobench.dataset import Dataset
 
@@ -61,10 +61,6 @@ dataset = Dataset(
     future_covariates=future_covariates,
 )
 ```
-
-1.  :man_raising_hand: I'm a code annotation! I can contain `code`, __formatted
-    text__, images, ... basically anything that can be written in Markdown.
-
 
 The package integrates with the HuggingFace Dataset ['attila-balint-kul/electricity-demand'](https://huggingface.co/datasets/attila-balint-kul/electricity-demand). 
 To use this, just download all the files from the data folder to your computer.
