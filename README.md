@@ -99,7 +99,8 @@ To get started with some examples check out the `models` folder and the [example
 ## Benchmarking
 
 Once confident in your model, you can submit for evaluation.
-The results of the benchmarks are openly accessible [here](https://wandb.ai/attila-balint-kul/load-forecasting-competition/reports/Enfobench-Dashboard--Vmlldzo2MDM0ODE2#models).
+The results of the benchmarks are openly accessible [here](https://api.wandb.ai/links/attila-balint-kul/duaehj8c
+).
 
 
 ## Contributing
