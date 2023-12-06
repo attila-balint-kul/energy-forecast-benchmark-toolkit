@@ -9,16 +9,16 @@ from enfobench.evaluation.utils import create_forecast_index, periods_in_duratio
 
 
 class MSTLModel:
-    def __init__(self, seasonality: str):
-        self.seasonality = seasonality.upper()
-
     def info(self) -> ModelInfo:
         return ModelInfo(
-            name=f"Statsforecast.MSTL.{self.seasonality}",
+            name=f"Statsforecast.MSTL.1D.7D",
             authors=[AuthorInfo(name="Attila Balint", email="attila.balint@kuleuven.be")],
             type=ForecasterType.quantile,
             params={
-                "seasonality": self.seasonality,
+                "seasonalities": [
+                    "1D",
+                    "7D",
+                ],
             },
         )
 
@@ -35,8 +35,9 @@ class MSTLModel:
         y = history.y.fillna(history.y.mean())
 
         # Create model
-        periods = periods_in_duration(y.index, duration=self.seasonality)
-        model = MSTL(season_length=periods)
+        periods_in_1D = periods_in_duration(y.index, duration='1D')
+        periods_in_7D = periods_in_duration(y.index, duration='7D')
+        model = MSTL(season_length=[periods_in_1D, periods_in_7D])
 
         # Make forecast
         pred = model.forecast(y=y.values, h=horizon, level=level, **kwargs)
@@ -49,11 +50,8 @@ class MSTLModel:
         return forecast
 
 
-# Load parameters
-seasonality = os.getenv("ENFOBENCH_MODEL_SEASONALITY")
-
 # Instantiate your model
-model = MSTLModel(seasonality=seasonality)
+model = MSTLModel()
 
 # Create a forecast server by passing in your model
 app = server_factory(model)
