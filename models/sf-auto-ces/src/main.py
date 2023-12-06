@@ -11,16 +11,32 @@ from enfobench.evaluation.utils import create_forecast_index, periods_in_duratio
 class AutoCESModel:
     def __init__(self, seasonality: str):
         self.seasonality = seasonality.upper()
+        self._last_prediction = None
 
     def info(self) -> ModelInfo:
         return ModelInfo(
-            name=f"Statsforecast.AutoCES.{self.seasonality}",
+            name=f"Statsforecast.AutoCES.{self.seasonality}.RP7D",
             authors=[AuthorInfo(name="Attila Balint", email="attila.balint@kuleuven.be")],
             type=ForecasterType.quantile,
             params={
                 "seasonality": self.seasonality,
             },
         )
+
+    def _forecast(self, y: pd.Series, level: list[int] | None = None) -> pd.DataFrame:
+        periods = periods_in_duration(y.index, duration=self.seasonality)
+        model = AutoCES(season_length=periods)
+
+        # Make forecast for 7 days
+        periods_in_7_days = periods_in_duration(y.index, duration="7D")
+        pred = model.forecast(y=y.values, h=periods_in_7_days, level=level)
+
+        # Create index for forecast
+        index = create_forecast_index(history=y.to_frame('y'), horizon=periods_in_7_days)
+
+        # Postprocess forecast
+        self._last_prediction = pd.DataFrame(index=index, data=pred).rename(columns={"mean": "yhat"}).fillna(y.mean())
+        return self._last_prediction
 
     def forecast(
         self,
@@ -34,18 +50,13 @@ class AutoCESModel:
         # Fill missing values
         y = history.y.fillna(history.y.mean())
 
-        # Create model
-        periods = periods_in_duration(y.index, duration=self.seasonality)
-        model = AutoCES(season_length=periods)
-
-        # Make forecast
-        pred = model.forecast(y=y.values, h=horizon, level=level, **kwargs)
-
         # Create index for forecast
         index = create_forecast_index(history=history, horizon=horizon)
 
-        # Postprocess forecast
-        forecast = pd.DataFrame(index=index, data=pred).rename(columns={"mean": "yhat"}).fillna(y.mean())
+        if self._last_prediction is None or not index.isin(self._last_prediction.index).all():
+            self._forecast(y=y, level=level)
+
+        forecast = self._last_prediction.loc[index]
         return forecast
 
 
