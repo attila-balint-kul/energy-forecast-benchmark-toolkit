@@ -9,7 +9,7 @@ from tqdm import tqdm
 from enfobench.dataset import Dataset
 from enfobench.evaluation.client import ForecastClient
 from enfobench.evaluation.model import Model
-from enfobench.evaluation.utils import generate_cutoff_dates, steps_in_horizon
+from enfobench.evaluation.utils import generate_cutoff_dates, steps_in_horizon, create_forecast_index
 
 
 def _compute_metric(forecast: pd.DataFrame, metric: Callable) -> float:
@@ -138,6 +138,11 @@ def cross_validate(
                 f"Forecast must be a DataFrame with a DatetimeIndex, "
                 f"got {type(forecast)} with index {type(forecast.index)}."
             )
+            raise ValueError(msg)
+
+        expected_index = create_forecast_index(history, horizon_length)
+        if not (expected_index == forecast.index).all():
+            msg = "Forecast index does not match the expected index."
             raise ValueError(msg)
 
         forecast_contains_nans = forecast.isna().any(axis=None)

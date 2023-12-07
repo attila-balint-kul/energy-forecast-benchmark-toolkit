@@ -32,7 +32,7 @@ class AutoCESModel:
         pred = model.forecast(y=y.values, h=periods_in_7_days, level=level)
 
         # Create index for forecast
-        index = create_forecast_index(history=y.to_frame('y'), horizon=periods_in_7_days)
+        index = create_forecast_index(history=y.to_frame("y"), horizon=periods_in_7_days)
 
         # Postprocess forecast
         self._last_prediction = pd.DataFrame(index=index, data=pred).rename(columns={"mean": "yhat"}).fillna(y.mean())

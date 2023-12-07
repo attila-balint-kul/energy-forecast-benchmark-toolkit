@@ -29,10 +29,10 @@ def create_perfect_forecasts_from_covariates(
 
     forecasts = []
     while start + horizon <= last_date:
-        forecast = past_covariates.loc[(past_covariates.index > start) & (past_covariates.index <= start + horizon)]
+        forecast = past_covariates.loc[(past_covariates.index >= start) & (past_covariates.index < start + horizon)]
         forecast.rename_axis("timestamp", inplace=True)
         forecast.reset_index(inplace=True)
-        forecast["cutoff_date"] = pd.to_datetime(start, unit="ns")
+        forecast.insert(0, "cutoff_date", pd.to_datetime(start, unit="ns"))
         forecast.set_index(["cutoff_date", "timestamp"], inplace=True)
 
         if len(forecast) == 0:

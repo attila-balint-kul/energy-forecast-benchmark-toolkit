@@ -25,3 +25,16 @@ def test_create_perfect_forecasts_from_covariates():
     assert "covariate_2" in future_covariates.columns
     assert "timestamp" in future_covariates.columns
     assert "cutoff_date" in future_covariates.columns
+
+
+# def test_create_perfect_forecasts_from_covariates(covariates):
+#     forecasts = enfobench.dataset.utils.create_perfect_forecasts_from_covariates(
+#         covariates,
+#         horizon=pd.Timedelta("7 days"),
+#         step=pd.Timedelta("1D"),
+#     )
+#
+#     assert isinstance(forecasts, pd.DataFrame)
+#     assert "timestamp" in forecasts.columns
+#     assert "cutoff_date" in forecasts.columns
+#     assert all(col in forecasts.columns for col in covariates.columns)

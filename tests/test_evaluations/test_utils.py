@@ -2,8 +2,8 @@ from datetime import timedelta
 
 import pandas as pd
 import pytest
+import numpy as np
 
-import enfobench.dataset.utils
 from enfobench.evaluation import utils
 
 
@@ -24,32 +24,6 @@ def test_steps_in_horizon(horizon, freq, expected):
 def test_steps_in_horizon_raises_with_non_multiple_horizon():
     with pytest.raises(ValueError):
         utils.steps_in_horizon(pd.Timedelta("36 minutes"), "15T")
-
-
-def test_create_forecast_index(target):
-    history = target
-    horizon = 96
-    last_date = history.index[-1]
-
-    index = utils.create_forecast_index(history, horizon)
-
-    assert isinstance(index, pd.DatetimeIndex)
-    assert index.freq == target.index.freq
-    assert len(index) == horizon
-    assert all(idx > last_date for idx in index)
-
-
-def test_create_perfect_forecasts_from_covariates(covariates):
-    forecasts = enfobench.dataset.utils.create_perfect_forecasts_from_covariates(
-        covariates,
-        horizon=pd.Timedelta("7 days"),
-        step=pd.Timedelta("1D"),
-    )
-
-    assert isinstance(forecasts, pd.DataFrame)
-    assert "timestamp" in forecasts.columns
-    assert "cutoff_date" in forecasts.columns
-    assert all(col in forecasts.columns for col in covariates.columns)
 
 
 @pytest.mark.parametrize(
@@ -103,3 +77,107 @@ def test_periods_in_duration(freq, duration, expected):
     target = pd.date_range(start="2020-01-01", end="2020-02-01", freq=freq)
 
     assert utils.periods_in_duration(target, duration) == expected
+
+
+def test_periods_in_duration_raises_with_wrong_types():
+    target = pd.date_range(start="2020-01-01", end="2020-02-01", freq='15T')
+    with pytest.raises(ValueError):
+        utils.periods_in_duration(target, 3)
+
+
+def test_periods_in_duration_raises_with_multiple_frequencies():
+    target_1 = pd.date_range(start="2020-01-01", end="2020-01-02", freq='15T', inclusive='left')
+    target_2 = pd.date_range(start="2020-01-02", end="2020-01-03", freq='30T', inclusive='left')
+    target = pd.DatetimeIndex(np.append(target_1.values, target_2.values))
+
+    with pytest.raises(ValueError):
+        utils.periods_in_duration(target, '1H')
+
+
+def test_periods_in_duration_raises_if_duration_is_not_multiples():
+    target = pd.date_range(start="2020-01-01", end="2020-02-01", freq='15T')
+    with pytest.raises(ValueError):
+        utils.periods_in_duration(target, '4T')
+
+
+@pytest.mark.parametrize(
+    "start_date,end_date,horizon,step,expected",
+    [
+        ("2020-01-01", "2020-01-05", "2 days", "1 day", ["2020-01-01", "2020-01-02", "2020-01-03"]),
+        ("2020-01-01", "2020-01-05", "1 day", "1 day", ["2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04"]),
+    ]
+)
+def test_generate_cutoff_dates(helpers, start_date, end_date, horizon, step, expected):
+    start_date = pd.Timestamp(start_date)
+    end_date = pd.Timestamp(end_date)
+    horizon = pd.Timedelta(horizon)
+    step = pd.Timedelta(step)
+
+    cutoff_dates = utils.generate_cutoff_dates(start_date, end_date, horizon, step)
+
+    assert cutoff_dates == [pd.Timestamp(date) for date in expected]
+
+
+def test_generate_cutoff_date_raises_with_longer_horizon():
+    with pytest.raises(ValueError):
+        utils.generate_cutoff_dates(
+            start_date=pd.Timestamp("2020-01-01"),
+            end_date=pd.Timestamp("2020-01-05"),
+            horizon=pd.Timedelta("7 days"),
+            step=pd.Timedelta("1 day"),
+        )
+
+
+def test_generate_cutoff_date_raises_with_wrong_end_and_start_dates():
+    with pytest.raises(ValueError):
+        utils.generate_cutoff_dates(
+            start_date=pd.Timestamp("2020-01-01"),
+            end_date=pd.Timestamp("2020-01-01"),
+            horizon=pd.Timedelta("1 day"),
+            step=pd.Timedelta("1 day"),
+        )
+
+
+def test_generate_cutoff_date_raises_with_negative_horizon():
+    with pytest.raises(ValueError):
+        utils.generate_cutoff_dates(
+            start_date=pd.Timestamp("2020-01-01"),
+            end_date=pd.Timestamp("2020-01-05"),
+            horizon=pd.Timedelta("-1 day"),
+            step=pd.Timedelta("1 day"),
+        )
+
+
+def test_generate_cutoff_date_raises_with_negative_step():
+    with pytest.raises(ValueError):
+        utils.generate_cutoff_dates(
+            start_date=pd.Timestamp("2020-01-01"),
+            end_date=pd.Timestamp("2020-01-05"),
+            horizon=pd.Timedelta("1 day"),
+            step=pd.Timedelta("-1 day"),
+        )
+
+@pytest.mark.parametrize(
+    "freq,horizon",
+    [
+        ('1H', 24),
+        ('1H', 38),
+        ('30T', 48),
+        ('30T', 72),
+        ('15T', 96),
+        ('15T', 144),
+    ],
+)
+def test_create_forecast_index(helpers, freq, horizon):
+    dataset = helpers.generate_univariate_dataset(start="2020-01-01", end="2020-01-31", freq=freq)
+
+    cutoff_date = helpers.random_date(dataset.target_available_since, dataset.target_available_until, freq)
+    history = dataset.get_history(cutoff_date)
+
+    index = utils.create_forecast_index(history, horizon)
+
+    assert isinstance(index, pd.DatetimeIndex)
+    assert index.freq == history.index.freq
+    assert len(index) == horizon
+    assert index[0] == cutoff_date
+    assert all(idx >= cutoff_date for idx in index)

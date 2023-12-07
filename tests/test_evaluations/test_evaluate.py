@@ -10,146 +10,103 @@ from enfobench.evaluation import (
 from enfobench.evaluation.evaluate import _compute_metric, _compute_metrics, evaluate_metrics
 from enfobench.evaluation.metrics import mean_absolute_error, mean_squared_error
 from enfobench.evaluation.server import server_factory
-from enfobench.evaluation.utils import generate_cutoff_dates
 
 
-@pytest.mark.parametrize(
-    "horizon,step",
-    [
-        ("1 day", "1 day"),
-        ("1 day", "1 hour"),
-        ("1 day", "15 minutes"),
-        ("7 days", "1 day"),
-        ("7 days", "1 hour"),
-        ("7 days", "15 minutes"),
-    ],
-)
-def test_generate_cutoff_dates(horizon, step):
-    start_date = pd.Timestamp("2020-01-01")
-    end_date = pd.Timestamp("2020-01-10")
-    horizon = pd.Timedelta(horizon)
-    step = pd.Timedelta(step)
+def test_cross_validate_univariate_locally(helpers, model):
+    dataset = helpers.generate_univariate_dataset(start="2020-01-01", end="2020-03-01", freq="30T")
 
-    cutoff_dates = generate_cutoff_dates(start_date, end_date, horizon, step)
-
-    assert all(cutoff_date >= start_date for cutoff_date in cutoff_dates)
-    assert all(cutoff_date + horizon <= end_date for cutoff_date in cutoff_dates)
-    assert all(
-        cutoff - previous_cutoff == step
-        for cutoff, previous_cutoff in zip(cutoff_dates[1:], cutoff_dates[:-1], strict=True)
-    )
-
-
-def test_generate_cutoff_dates_raises_with_empty_time_series():
-    with pytest.raises(ValueError):
-        generate_cutoff_dates(
-            start_date=pd.Timestamp("2020-01-01"),
-            end_date=pd.Timestamp("2020-01-01"),
-            horizon=pd.Timedelta("1 day"),
-            step=pd.Timedelta("1 day"),
-        )
-
-
-def test_generate_cutoff_dates_raises_with_longer_horizon():
-    with pytest.raises(ValueError):
-        generate_cutoff_dates(
-            start_date=pd.Timestamp("2020-01-01"),
-            end_date=pd.Timestamp("2020-01-01"),
-            horizon=pd.Timedelta("7 days"),
-            step=pd.Timedelta("1 day"),
-        )
-
-
-def test_generate_cutoff_dates_raises_with_negative_horizon():
-    with pytest.raises(ValueError):
-        generate_cutoff_dates(
-            start_date=pd.Timestamp("2020-01-01"),
-            end_date=pd.Timestamp("2020-01-05"),
-            horizon=pd.Timedelta("-1 day"),
-            step=pd.Timedelta("1 day"),
-        )
-
-
-def test_generate_cutoff_dates_raises_with_negative_step():
-    with pytest.raises(ValueError):
-        generate_cutoff_dates(
-            start_date=pd.Timestamp("2020-01-01"),
-            end_date=pd.Timestamp("2020-01-05"),
-            horizon=pd.Timedelta("1 day"),
-            step=pd.Timedelta("-1 day"),
-        )
-
-
-def test_cross_validate_univariate_locally(model, target):
     forecasts = cross_validate(
         model=model,
-        dataset=Dataset(target),
-        start_date=pd.Timestamp("2020-01-10"),
-        end_date=pd.Timestamp("2020-01-21"),
-        horizon=pd.Timedelta("7 days"),
+        dataset=dataset,
+        start_date=pd.Timestamp("2020-02-01 10:00:00"),
+        end_date=pd.Timestamp("2020-03-01"),
+        horizon=pd.Timedelta("38 hours"),
         step=pd.Timedelta("1 day"),
     )
 
     assert isinstance(forecasts, pd.DataFrame)
     assert "timestamp" in forecasts.columns
+    assert "y" in forecasts.columns
     assert "yhat" in forecasts.columns
     assert "cutoff_date" in forecasts.columns
+    assert list(forecasts.cutoff_date.unique()) == list(
+        pd.date_range(start="2020-02-01 10:00:00", end="2020-02-28 10:00:00", freq="1D", inclusive="both")
+    )
 
 
-def test_cross_validate_univariate_via_server(model, target):
+def test_cross_validate_univariate_via_server(helpers, model):
+    dataset = helpers.generate_univariate_dataset(start="2020-01-01", end="2020-03-01", freq="30T")
+
     app = server_factory(model=model)
     test_client = TestClient(app)
     model = ForecastClient(client=test_client)
 
     forecasts = cross_validate(
         model=model,
-        dataset=Dataset(target),
-        start_date=pd.Timestamp("2020-01-10"),
-        end_date=pd.Timestamp("2020-01-21"),
-        horizon=pd.Timedelta("7 days"),
+        dataset=dataset,
+        start_date=pd.Timestamp("2020-02-01 10:00:00"),
+        end_date=pd.Timestamp("2020-03-01"),
+        horizon=pd.Timedelta("38 hours"),
         step=pd.Timedelta("1 day"),
     )
 
     assert isinstance(forecasts, pd.DataFrame)
     assert "timestamp" in forecasts.columns
+    assert "y" in forecasts.columns
     assert "yhat" in forecasts.columns
     assert "cutoff_date" in forecasts.columns
+    assert list(forecasts.cutoff_date.unique()) == list(
+        pd.date_range(start="2020-02-01 10:00:00", end="2020-02-28 10:00:00", freq="1D", inclusive="both")
+    )
 
 
-def test_cross_validate_multivariate_locally(model, target, covariates, external_forecasts):
+def test_cross_validate_multivariate_locally(helpers, model):
+    dataset = helpers.generate_multivariate_dataset(columns=["x", "z"], start="2020-01-01", end="2020-03-01", freq="30T")
+
     forecasts = cross_validate(
         model=model,
-        dataset=Dataset(target, covariates, external_forecasts),
-        start_date=pd.Timestamp("2020-01-10"),
-        end_date=pd.Timestamp("2020-01-21"),
-        horizon=pd.Timedelta("7 days"),
+        dataset=dataset,
+        start_date=pd.Timestamp("2020-02-01 10:00:00"),
+        end_date=pd.Timestamp("2020-03-01"),
+        horizon=pd.Timedelta("38 hours"),
         step=pd.Timedelta("1 day"),
     )
 
+
     assert isinstance(forecasts, pd.DataFrame)
     assert "timestamp" in forecasts.columns
+    assert "y" in forecasts.columns
     assert "yhat" in forecasts.columns
     assert "cutoff_date" in forecasts.columns
+    assert list(forecasts.cutoff_date.unique()) == list(
+        pd.date_range(start="2020-02-01 10:00:00", end="2020-02-28 10:00:00", freq="1D", inclusive="both")
+    )
 
 
-def test_cross_validate_multivariate_via_server(model, target, covariates, external_forecasts):
+def test_cross_validate_multivariate_via_server(helpers, model):
+    dataset = helpers.generate_multivariate_dataset(columns=["x", "z"], start="2020-01-01", end="2020-03-01", freq="30T")
+
     app = server_factory(model=model)
     test_client = TestClient(app)
     model = ForecastClient(client=test_client)
 
     forecasts = cross_validate(
         model=model,
-        dataset=Dataset(target, covariates, external_forecasts),
-        start_date=pd.Timestamp("2020-01-10"),
-        end_date=pd.Timestamp("2020-01-21"),
-        horizon=pd.Timedelta("7 days"),
+        dataset=dataset,
+        start_date=pd.Timestamp("2020-02-01 10:00:00"),
+        end_date=pd.Timestamp("2020-03-01"),
+        horizon=pd.Timedelta("38 hours"),
         step=pd.Timedelta("1 day"),
     )
 
     assert isinstance(forecasts, pd.DataFrame)
     assert "timestamp" in forecasts.columns
+    assert "y" in forecasts.columns
     assert "yhat" in forecasts.columns
     assert "cutoff_date" in forecasts.columns
+    assert list(forecasts.cutoff_date.unique()) == list(
+        pd.date_range(start="2020-02-01 10:00:00", end="2020-02-28 10:00:00", freq="1D", inclusive="both")
+    )
 
 
 def test_compute_metric(clean_forecasts):
@@ -240,3 +197,7 @@ def test_evaluate_metrics_on_forecasts_with_missing_values_grouped_by(forecasts_
     assert all(0 < metric < 1 for metric in metrics["MAE"])
     assert all(0 < metric < 1 for metric in metrics["MSE"])
     assert all(0 <= metric <= 1 for metric in metrics["weight"])
+
+
+if __name__ == '__main__':
+    pytest.main()

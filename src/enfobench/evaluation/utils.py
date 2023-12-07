@@ -26,16 +26,20 @@ def periods_in_duration(target: pd.DatetimeIndex, duration: timedelta | pd.Timed
         duration = pd.Timedelta(duration)
     elif isinstance(duration, str):
         duration = pd.Timedelta(duration)
-
-    first_delta = target[1] - target[0]
-    last_delta = target[-1] - target[-2]
-    if first_delta != last_delta:
-        msg = f"Season length is not constant: '{first_delta}' != '{last_delta}'"
+    elif isinstance(duration, pd.Timedelta):
+        pass
+    else:
+        msg = f"Duration must be one of [pd.Timedelta, timedelta, str], got {type(duration)}"
         raise ValueError(msg)
 
-    periods = duration / first_delta
+    if len(target.diff()[1:].unique()) != 1:
+        msg = f"Multiple frequencies found: '{[td for td in target.diff()[1:].unique()]}'"
+        raise ValueError(msg)
+
+    delta_t = target.diff()[1:].unique()[0]
+    periods = duration / target.diff()[1:].unique()[0]
     if not periods.is_integer():
-        msg = f"Season length '{duration}' is not a multiple of the frequency '{first_delta}'"
+        msg = f"Season length '{duration}' is not a multiple of the frequency '{delta_t}'"
         raise ValueError(msg)
     return int(periods)
 

@@ -1,5 +1,3 @@
-import os
-
 import pandas as pd
 from statsforecast.models import MSTL
 
@@ -11,7 +9,7 @@ from enfobench.evaluation.utils import create_forecast_index, periods_in_duratio
 class MSTLModel:
     def info(self) -> ModelInfo:
         return ModelInfo(
-            name=f"Statsforecast.MSTL.1D.7D",
+            name="Statsforecast.MSTL.1D.7D",
             authors=[AuthorInfo(name="Attila Balint", email="attila.balint@kuleuven.be")],
             type=ForecasterType.quantile,
             params={
@@ -35,9 +33,9 @@ class MSTLModel:
         y = history.y.fillna(history.y.mean())
 
         # Create model
-        periods_in_1D = periods_in_duration(y.index, duration='1D')
-        periods_in_7D = periods_in_duration(y.index, duration='7D')
-        model = MSTL(season_length=[periods_in_1D, periods_in_7D])
+        periods_in_one_day = periods_in_duration(y.index, duration="1D")
+        periods_in_one_week = periods_in_duration(y.index, duration="7D")
+        model = MSTL(season_length=[periods_in_one_day, periods_in_one_week])
 
         # Make forecast
         pred = model.forecast(y=y.values, h=horizon, level=level, **kwargs)
