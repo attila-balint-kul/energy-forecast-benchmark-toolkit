@@ -44,6 +44,13 @@ dependencies = [
     "uvicorn>=0.20.0",
 ]
 
+[project.optional-dependencies]
+visualization = [
+    "matplotlib",
+    "seaborn",
+    "statsmodels",
+]
+
 
 [project.urls]
 Documentation = "https://github.com/attila-balint-kul/energy-forecast-benchmark-toolkit#readme"
