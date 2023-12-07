@@ -69,7 +69,7 @@ docs-build:
 
 .PHONY: build
 ## Build source distribution and wheel
-build: style
+build:
 	hatch build
 
 .PHONY: publish
@@ -92,6 +92,13 @@ ENFOBENCH_VERSION := $(shell hatch version)
 MODEL_NAME := sf-naive
 IMAGE_TAG := $(ENFOBENCH_VERSION)-$(MODEL_NAME)
 DEFAULT_PORT := 3000
+
+.PHONY: base-images
+## Create docker base image
+base-images:
+	docker build --build-arg DARTS_VERSION=0.27.0 -t $(DOCKER_HUB_REPOSITORY):base-u8darts-0.27.0 ./docker/base/darts
+	docker build --build-arg SKTIME_VERSION=0.24.1 -t $(DOCKER_HUB_REPOSITORY):base-sktime-0.24.1 ./docker/base/sktime
+	docker build --build-arg STATSFORECAST_VERSION=1.5.0 -t $(DOCKER_HUB_REPOSITORY):base-statsforecast-1.5.0 ./docker/base/statsforecast
 
 .PHONY: image
 ## Create docker image

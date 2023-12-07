@@ -1,14 +1,9 @@
-FROM python:3.11.6-slim-bookworm
+FROM attilabalint/enfobench-demand-models:base-u8darts-0.27.0
 
 WORKDIR /usr/local/app
 
 COPY ./requirements.txt /usr/local/app/requirements.txt
-RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r /usr/local/app/requirements.txt
-
-# Polars requires AVX2 CPU instructions, which are not available on the server
-RUN pip uninstall -y polars
-RUN pip install --no-cache-dir polars-lts-cpu
 
 COPY ./src /usr/local/app/src
 
