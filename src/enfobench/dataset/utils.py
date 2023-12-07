@@ -8,7 +8,7 @@ def create_perfect_forecasts_from_covariates(
     *,
     horizon: pd.Timedelta,
     step: pd.Timedelta,
-    **kwargs,
+    start: pd.Timestamp | None = None,
 ) -> pd.DataFrame:
     """Create forecasts from covariates.
 
@@ -19,19 +19,21 @@ def create_perfect_forecasts_from_covariates(
         past_covariates: The external covariates.
         horizon: The forecast horizon.
         step: The step size between forecasts.
+        start: The start date of the forecast. If None, the first date of the covariates is used.
 
     Returns:
         The external forecast dataframe.
     """
-    start = kwargs.get("start", past_covariates.index[0])
+    start = start or past_covariates.index[0]
     last_date = past_covariates.index[-1]
 
     forecasts = []
     while start + horizon <= last_date:
         forecast = past_covariates.loc[(past_covariates.index > start) & (past_covariates.index <= start + horizon)]
-        forecast.insert(0, "cutoff_date", start)
         forecast.rename_axis("timestamp", inplace=True)
         forecast.reset_index(inplace=True)
+        forecast["cutoff_date"] = pd.to_datetime(start, unit="ns")
+        forecast.set_index(["cutoff_date", "timestamp"], inplace=True)
 
         if len(forecast) == 0:
             warnings.warn(
@@ -39,9 +41,11 @@ def create_perfect_forecasts_from_covariates(
                 UserWarning,
                 stacklevel=2,
             )
-
-        forecasts.append(forecast)
+        else:
+            forecasts.append(forecast)
         start += step
 
-    forecast_df = pd.concat(forecasts, ignore_index=True)
+    forecast_df = pd.concat(forecasts, ignore_index=False)
+    forecast_df.reset_index(inplace=True)
+    forecast_df.sort_values(by=["cutoff_date", "timestamp"], inplace=True)
     return forecast_df

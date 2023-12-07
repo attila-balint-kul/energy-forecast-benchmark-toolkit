@@ -113,6 +113,14 @@ all = [
     "typing",
 ]
 
+[tool.hatch.envs.docs]
+detached = true
+dependencies = [
+    "mkdocs-material>=9.4.0",
+]
+[tool.hatch.envs.docs.scripts]
+build = "mkdocs build -f docs/mkdocs.yml"
+serve = "mkdocs serve -f docs/mkdocs.yml"
 
 [tool.black]
 target-version = ["py310"]
@@ -173,9 +181,10 @@ ban-relative-imports = "all"
 [tool.ruff.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
+"models/**/*" = ["ARG001", "ARG002", "FBT001"]
 
 [tool.coverage.run]
-source_pkgs = ["enfobench", "tests"]
+source_pkgs = ["enfobench"]
 branch = true
 parallel = true
 omit = [

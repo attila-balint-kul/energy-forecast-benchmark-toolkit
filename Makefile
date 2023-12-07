@@ -1,13 +1,11 @@
-.PHONY: install clean lint style format test build publish publish-test
-
 #################################################################################
 # GLOBALS                                                                       #
 #################################################################################
 
 PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-PROJECT_NAME = energy-forecat-benchmark-toolkit
+PROJECT_NAME = energy-forecast-benchmark-toolkit
 PACKAGE_NAME = enfobench
-PYTHON_INTERPRETER = python3
+PYTHON_INTERPRETER ?= python3
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -21,6 +19,7 @@ venv/bin/python:
 		pip install --upgrade pip; \
 	)
 
+.PHONY: install
 ## Install project dependencies
 install: venv/bin/python
 	(\
@@ -28,43 +27,93 @@ install: venv/bin/python
 		pip install -e .; \
     )
 
+.PHONY: clean
 ## Delete all compiled Python files
 clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
 
+.PHONY: lint
 ## Lint using ruff, mypy, black, and isort
 lint:
 	hatch run lint:all
 
-
+.PHONY: style
 ## Check style using ruff, black, and isort
 style:
 	hatch run lint:style
 
+.PHONY: format
 ## Format using black
 format:
 	hatch run lint:fmt
 
+.PHONY: tests
 ## Run pytest with coverage
-test:
+tests:
 	hatch run cov
 
+.PHONY: docs
+## Create documentation
+docs:
+	hatch run docs:serve
+
+.PHONY: docs-build
+## Build documentation
+docs-build:
+	hatch run docs:build
+
 #################################################################################
-# PROJECT RULES                                                                 #
+# PACKAGING RULES                                                               #
 #################################################################################
 
+.PHONY: build
 ## Build source distribution and wheel
 build: style
 	hatch build
 
+.PHONY: publish
 ## Upload source distribution and wheel to PyPI
 publish: build
 	hatch publish --repo main
 
+.PHONY: publish-test
 ## Upload source distribution and wheel to TestPyPI
 publish-test: build
 	hatch publish --repo test
+
+
+#################################################################################
+# MODEL RULES                                                                   #
+#################################################################################
+
+DOCKER_HUB_REPOSITORY := $(DOCKER_HUB_REPOSITORY)
+ENFOBENCH_VERSION := $(shell hatch version)
+MODEL_NAME := sf-naive
+IMAGE_TAG := $(ENFOBENCH_VERSION)-$(MODEL_NAME)
+DEFAULT_PORT := 3000
+
+.PHONY: image
+## Create docker image
+image:
+	docker build -t $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG) ./models/$(MODEL_NAME)
+
+.PHONY: push-image
+## Push docker image to Docker Hub
+push-image: image
+	docker push $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG)
+
+.PHONY: run-image
+run-image: image
+	docker run -it --rm -p $(DEFAULT_PORT):3000 $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG)
+
+
+MODELS = $(shell ls -d ./models/* | xargs -n 1 basename)
+images:
+	$(foreach var,$(MODELS), $(MAKE) image MODEL_NAME=$(var);)
+
+push-images:
+	$(foreach var,$(MODELS), $(MAKE) push-image MODEL_NAME=$(var);)
 
 
 #################################################################################

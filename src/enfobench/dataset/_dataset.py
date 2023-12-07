@@ -229,7 +229,7 @@ class DemandDataset:
     def list_location_ids(self) -> list[str]:
         return self.weather_subset.list_location_ids()
 
-    def get_data_by_unique_id(self, unique_id: str) -> tuple[pd.DataFrame | pd.DataFrame | Metadata]:
+    def get_data_by_unique_id(self, unique_id: str) -> tuple[pd.DataFrame, pd.DataFrame, Metadata]:
         metadata = self.metadata_subset.get_by_unique_id(unique_id)
 
         demand = self.demand_subset.get_by_unique_id(unique_id)
