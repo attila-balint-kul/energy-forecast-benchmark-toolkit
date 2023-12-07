@@ -2,7 +2,6 @@ import pandas as pd
 import pytest
 from starlette.testclient import TestClient
 
-from enfobench.dataset import Dataset
 from enfobench.evaluation import (
     ForecastClient,
     cross_validate,
@@ -61,7 +60,9 @@ def test_cross_validate_univariate_via_server(helpers, model):
 
 
 def test_cross_validate_multivariate_locally(helpers, model):
-    dataset = helpers.generate_multivariate_dataset(columns=["x", "z"], start="2020-01-01", end="2020-03-01", freq="30T")
+    dataset = helpers.generate_multivariate_dataset(
+        columns=["x", "z"], start="2020-01-01", end="2020-03-01", freq="30T"
+    )
 
     forecasts = cross_validate(
         model=model,
@@ -71,7 +72,6 @@ def test_cross_validate_multivariate_locally(helpers, model):
         horizon=pd.Timedelta("38 hours"),
         step=pd.Timedelta("1 day"),
     )
-
 
     assert isinstance(forecasts, pd.DataFrame)
     assert "timestamp" in forecasts.columns
@@ -84,7 +84,9 @@ def test_cross_validate_multivariate_locally(helpers, model):
 
 
 def test_cross_validate_multivariate_via_server(helpers, model):
-    dataset = helpers.generate_multivariate_dataset(columns=["x", "z"], start="2020-01-01", end="2020-03-01", freq="30T")
+    dataset = helpers.generate_multivariate_dataset(
+        columns=["x", "z"], start="2020-01-01", end="2020-03-01", freq="30T"
+    )
 
     app = server_factory(model=model)
     test_client = TestClient(app)
@@ -199,5 +201,5 @@ def test_evaluate_metrics_on_forecasts_with_missing_values_grouped_by(forecasts_
     assert all(0 <= metric <= 1 for metric in metrics["weight"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main()

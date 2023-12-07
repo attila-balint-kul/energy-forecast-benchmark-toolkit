@@ -33,7 +33,7 @@ def periods_in_duration(target: pd.DatetimeIndex, duration: timedelta | pd.Timed
         raise ValueError(msg)
 
     if len(target.diff()[1:].unique()) != 1:
-        msg = f"Multiple frequencies found: '{[td for td in target.diff()[1:].unique()]}'"
+        msg = f"Multiple frequencies found: '{list(target.diff()[1:].unique())}'"
         raise ValueError(msg)
 
     delta_t = target.diff()[1:].unique()[0]

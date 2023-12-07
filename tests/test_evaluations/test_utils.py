@@ -1,8 +1,8 @@
 from datetime import timedelta
 
+import numpy as np
 import pandas as pd
 import pytest
-import numpy as np
 
 from enfobench.evaluation import utils
 
@@ -80,24 +80,24 @@ def test_periods_in_duration(freq, duration, expected):
 
 
 def test_periods_in_duration_raises_with_wrong_types():
-    target = pd.date_range(start="2020-01-01", end="2020-02-01", freq='15T')
+    target = pd.date_range(start="2020-01-01", end="2020-02-01", freq="15T")
     with pytest.raises(ValueError):
         utils.periods_in_duration(target, 3)
 
 
 def test_periods_in_duration_raises_with_multiple_frequencies():
-    target_1 = pd.date_range(start="2020-01-01", end="2020-01-02", freq='15T', inclusive='left')
-    target_2 = pd.date_range(start="2020-01-02", end="2020-01-03", freq='30T', inclusive='left')
+    target_1 = pd.date_range(start="2020-01-01", end="2020-01-02", freq="15T", inclusive="left")
+    target_2 = pd.date_range(start="2020-01-02", end="2020-01-03", freq="30T", inclusive="left")
     target = pd.DatetimeIndex(np.append(target_1.values, target_2.values))
 
     with pytest.raises(ValueError):
-        utils.periods_in_duration(target, '1H')
+        utils.periods_in_duration(target, "1H")
 
 
 def test_periods_in_duration_raises_if_duration_is_not_multiples():
-    target = pd.date_range(start="2020-01-01", end="2020-02-01", freq='15T')
+    target = pd.date_range(start="2020-01-01", end="2020-02-01", freq="15T")
     with pytest.raises(ValueError):
-        utils.periods_in_duration(target, '4T')
+        utils.periods_in_duration(target, "4T")
 
 
 @pytest.mark.parametrize(
@@ -105,9 +105,9 @@ def test_periods_in_duration_raises_if_duration_is_not_multiples():
     [
         ("2020-01-01", "2020-01-05", "2 days", "1 day", ["2020-01-01", "2020-01-02", "2020-01-03"]),
         ("2020-01-01", "2020-01-05", "1 day", "1 day", ["2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04"]),
-    ]
+    ],
 )
-def test_generate_cutoff_dates(helpers, start_date, end_date, horizon, step, expected):
+def test_generate_cutoff_dates(start_date, end_date, horizon, step, expected):
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
     horizon = pd.Timedelta(horizon)
@@ -157,15 +157,16 @@ def test_generate_cutoff_date_raises_with_negative_step():
             step=pd.Timedelta("-1 day"),
         )
 
+
 @pytest.mark.parametrize(
     "freq,horizon",
     [
-        ('1H', 24),
-        ('1H', 38),
-        ('30T', 48),
-        ('30T', 72),
-        ('15T', 96),
-        ('15T', 144),
+        ("1H", 24),
+        ("1H", 38),
+        ("30T", 48),
+        ("30T", 72),
+        ("15T", 96),
+        ("15T", 144),
     ],
 )
 def test_create_forecast_index(helpers, freq, horizon):

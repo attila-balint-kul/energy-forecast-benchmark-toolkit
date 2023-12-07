@@ -9,7 +9,7 @@ from tqdm import tqdm
 from enfobench.dataset import Dataset
 from enfobench.evaluation.client import ForecastClient
 from enfobench.evaluation.model import Model
-from enfobench.evaluation.utils import generate_cutoff_dates, steps_in_horizon, create_forecast_index
+from enfobench.evaluation.utils import create_forecast_index, generate_cutoff_dates, steps_in_horizon
 
 
 def _compute_metric(forecast: pd.DataFrame, metric: Callable) -> float:

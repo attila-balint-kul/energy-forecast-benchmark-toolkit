@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from enfobench import AuthorInfo, ForecasterType, ModelInfo, Dataset
+from enfobench import AuthorInfo, Dataset, ForecasterType, ModelInfo
 from enfobench.evaluation.utils import create_forecast_index
 
 
