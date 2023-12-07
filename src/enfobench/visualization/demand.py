@@ -1,16 +1,17 @@
-import warnings
+from datetime import timedelta
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
 from enfobench.evaluation.filters import hampel
+from enfobench.evaluation.utils import periods_in_duration
 
 try:
     import seaborn as sns
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
-    from matplotlib.ticker import LinearLocator
+    from matplotlib.ticker import LinearLocator, MultipleLocator
 
     from statsmodels.graphics import tsaplots
 except ImportError as e:
@@ -300,12 +301,15 @@ def plot_data_quality(data: pd.DataFrame, figsize: tuple[float, float] = (12, 5)
 def plot_acf(
     data: pd.DataFrame,
     figsize: tuple[float, float] = (12, 5),
+    lags: pd.Timedelta | timedelta | str = '7D',
 ) -> tuple[Figure, Axes]:
-    """Plot the autocorrelation function of demand data.
+    """Plots the autocorrelation function.
 
     Args:
         data: Demand data.
         figsize: Figure size.
+        lags: Number of lags to plot. If a string is passed, it must be a valid
+            pandas frequency string (e.g. '7D' for 7 days).
 
     Returns:
         fig: Figure object.
@@ -313,24 +317,66 @@ def plot_acf(
     """
     fig, ax = plt.subplots(1, 1, figsize=figsize)
 
-    periods = periods_in_
+    periods = periods_in_duration(data.index, duration=lags)
     tsaplots.plot_acf(data['y'], ax=ax, lags=periods)
 
+    plt.title('')
     ax.set_title('Autocorrelation', loc='left', fontsize='large')
-    ax.set_xlabel('Lag')
+    ax.grid()
+    ax.set_xlim(0 - periods * 0.01, periods * 1.01)
+
+    periods_in_one_day = periods_in_duration(data.index, duration='1D')
+    if periods <= periods_in_one_day:
+        periods_in_three_hours = periods_in_duration(data.index, duration='3H')
+        ax.xaxis.set_major_locator(MultipleLocator(periods_in_three_hours))
+        ax.xaxis.set_major_formatter(lambda x, pos: str(int(x / periods_in_three_hours * 3)))
+        ax.xaxis.set_minor_locator(MultipleLocator(periods_in_duration(data.index, duration='1H')))
+        ax.set_xlabel('Lag (hours)')
+    else:
+        ax.xaxis.set_major_locator(MultipleLocator(periods_in_one_day))
+        ax.xaxis.set_major_formatter(lambda x, pos: str(int(x / periods_in_one_day)))
+        ax.xaxis.set_minor_locator(MultipleLocator(periods_in_duration(data.index, duration='6H')))
+        ax.set_xlabel('Lag (days)')
     return fig, ax
 
 
-if __name__ == '__main__':
-    import pandas as pd
-    import numpy as np
-    from enfobench.evaluation.filters import hampel
+def plot_pacf(
+    data: pd.DataFrame,
+    figsize: tuple[float, float] = (12, 5),
+    lags: pd.Timedelta | timedelta | str = '7D',
+) -> tuple[Figure, Axes]:
+    """Plots the partial autocorrelation function.
 
-    data = pd.DataFrame(
-        data=np.random.randint(0, 100, 100),
-        index=pd.date_range(start='2020-01-01', periods=100, freq='H'),
-        columns=['y']
-    )
+    Args:
+        data: Demand data.
+        figsize: Figure size.
+        lags: Number of lags to plot. If a string is passed, it must be a valid
+            pandas frequency string (e.g. '7D' for 7 days).
 
-    fig, ax = plot_acf(data)
-    plt.show()
+    Returns:
+        fig: Figure object.
+        ax: Axes object.
+    """
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+
+    periods = periods_in_duration(data.index, duration=lags)
+    tsaplots.plot_pacf(data['y'], ax=ax, lags=periods)
+
+    plt.title('')
+    ax.set_title('Partial autocorrelation', loc='left', fontsize='large')
+    ax.grid()
+    ax.set_xlim(0 - periods * 0.01, periods * 1.01)
+
+    periods_in_one_day = periods_in_duration(data.index, duration='1D')
+    if periods <= periods_in_one_day:
+        periods_in_three_hours = periods_in_duration(data.index, duration='3H')
+        ax.xaxis.set_major_locator(MultipleLocator(periods_in_three_hours))
+        ax.xaxis.set_major_formatter(lambda x, pos: str(int(x / periods_in_three_hours * 3)))
+        ax.xaxis.set_minor_locator(MultipleLocator(periods_in_duration(data.index, duration='1H')))
+        ax.set_xlabel('Lag (hours)')
+    else:
+        ax.xaxis.set_major_locator(MultipleLocator(periods_in_one_day))
+        ax.xaxis.set_major_formatter(lambda x, pos: str(int(x / periods_in_one_day)))
+        ax.xaxis.set_minor_locator(MultipleLocator(periods_in_duration(data.index, duration='6H')))
+        ax.set_xlabel('Lag (days)')
+    return fig, ax
