@@ -77,4 +77,4 @@ Then you can test your model by using the `03. ForecastClient.ipynb` notebook.
 
 Once the model is tested, push it to any public Docker registry 
 (e.g., DockerHub). Contact us with the repository and model tag, 
-and we will add it to the [dashboard](https://wandb.ai/attila-balint-kul/load-forecasting-competition/reports/Enfobench-Dashboard--Vmlldzo2MDM0ODE2#models).
+and we will add it to the [dashboard](https://api.wandb.ai/links/attila-balint-kul/duaehj8c).

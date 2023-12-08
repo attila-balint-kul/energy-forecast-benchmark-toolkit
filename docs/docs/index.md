@@ -171,7 +171,7 @@ uvicorn.run(server, port=3000)
 The package also provides a benchmarking framework that can be used to benchmark your model against
 other models. 
 
-The results of the benchmarking are openly accessible [here](https://wandb.ai/attila-balint-kul/load-forecasting-competition/reports/Enfobench-Dashboard--Vmlldzo2MDM0ODE2#models).
+The results of the benchmarking are openly accessible [here](https://api.wandb.ai/links/attila-balint-kul/duaehj8c).
 
 
 ## Contributing
