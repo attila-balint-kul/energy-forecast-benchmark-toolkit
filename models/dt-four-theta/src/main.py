@@ -11,13 +11,23 @@ from enfobench.evaluation.utils import periods_in_duration
 
 
 class DartsFourThetaModel:
+    """FourTheta model from Darts.
+
+    Args:
+        seasonality: The seasonality of the time series. E.g. "1D" for daily seasonality.
+
+    References:
+        https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html
+    """
     def __init__(self, seasonality: str):
         self.seasonality = seasonality.upper()
 
     def info(self) -> ModelInfo:
         return ModelInfo(
             name=f"Darts.FourTheta.{self.seasonality}.SM-A",
-            authors=[AuthorInfo(name="Attila Balint", email="attila.balint@kuleuven.be")],
+            authors=[
+                AuthorInfo(name="Attila Balint", email="attila.balint@kuleuven.be"),
+            ],
             type=ForecasterType.point,
             params={
                 "seasonality": self.seasonality,
