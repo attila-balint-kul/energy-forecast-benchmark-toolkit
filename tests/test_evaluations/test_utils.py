@@ -85,15 +85,6 @@ def test_periods_in_duration_raises_with_wrong_types():
         utils.periods_in_duration(target, 3)
 
 
-def test_periods_in_duration_raises_with_multiple_frequencies():
-    target_1 = pd.date_range(start="2020-01-01", end="2020-01-02", freq="15T", inclusive="left")
-    target_2 = pd.date_range(start="2020-01-02", end="2020-01-03", freq="30T", inclusive="left")
-    target = pd.DatetimeIndex(np.append(target_1.values, target_2.values))
-
-    with pytest.raises(ValueError):
-        utils.periods_in_duration(target, "1H")
-
-
 def test_periods_in_duration_raises_if_duration_is_not_multiples():
     target = pd.date_range(start="2020-01-01", end="2020-02-01", freq="15T")
     with pytest.raises(ValueError):
