@@ -72,7 +72,8 @@ class MetadataSubset(Subset):
         if df.empty:
             msg = f"Unique id '{unique_id}' was not found."
             raise KeyError(msg)
-        return Metadata(**df.to_dict(orient="records")[0])
+        metadata = df.iloc[0].to_dict()
+        return Metadata(**{k: v for k, v in metadata.items() if k in Metadata.__annotations__.keys()})
 
 
 class WeatherSubset(Subset):
