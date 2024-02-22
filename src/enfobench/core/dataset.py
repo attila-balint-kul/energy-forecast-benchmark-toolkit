@@ -1,4 +1,5 @@
 import logging
+import warnings
 from abc import ABCMeta
 from pathlib import Path
 
@@ -72,7 +73,6 @@ class Dataset:
     @property
     def target_freq(self) -> str:
         """Returns the frequency of the target."""
-        delta_t = self._target.index[1] - self._target.index[0]
         return self._target.index.inferred_freq
 
     @staticmethod
@@ -80,8 +80,13 @@ class Dataset:
         if isinstance(y, pd.Series):
             logger.warning("Target is a Series, converting to DataFrame.")
             y = y.to_frame("y")
+
         if not isinstance(y.index, pd.DatetimeIndex):
             msg = f"Target dataframe must have DatetimeIndex, have {y.index.__class__.__name__}."
+            raise ValueError(msg)
+
+        if y.index.freq is None:
+            msg = "Target dataframe must have a frequency."
             raise ValueError(msg)
 
         y.rename_axis("timestamp", inplace=True)
@@ -97,12 +102,12 @@ class Dataset:
         X.sort_index(inplace=True)
 
         if X.index[0] > self._first_available_target_date:
-            msg = "Covariates must be provided for the full target timeframe, covariates start after target values."
-            raise ValueError(msg)
+            msg = "Covariates should be provided for the full target timeframe, covariates start after target values."
+            warnings.warn(msg, UserWarning, stacklevel=2)
 
         if X.index[-1] < self._last_available_target_date:
-            msg = "Covariates must be provided for the full target timeframe, covariates end before target values."
-            raise ValueError(msg)
+            msg = "Covariates should be provided for the full target timeframe, covariates end before target values."
+            warnings.warn(msg, UserWarning, stacklevel=2)
         return X
 
     def _check_external_forecasts(self, X: pd.DataFrame) -> pd.DataFrame:  # noqa: N803
@@ -112,17 +117,17 @@ class Dataset:
 
         if first_forecast_date > self._first_available_target_date:
             msg = (
-                "External forecasts must be provided for the full target timeframe, "
+                "External forecasts should be provided for the full target timeframe, "
                 "forecasts start after target values."
             )
-            raise ValueError(msg)
+            warnings.warn(msg, UserWarning, stacklevel=2)
 
         if last_forecast_end_date < self._last_available_target_date:
             msg = (
-                "External forecasts must be provided for the full target timeframe, "
+                "External forecasts should be provided for the full target timeframe, "
                 "forecasts end before target values."
             )
-            raise ValueError(msg)
+            warnings.warn(msg, UserWarning, stacklevel=2)
 
         return X
 

@@ -31,6 +31,7 @@ class TestModel:
         past_covariates=None,  # noqa: ARG002
         future_covariates=None,  # noqa: ARG002
         level=None,  # noqa: ARG002
+        metadata=None,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ):
         index = create_forecast_index(history, horizon)

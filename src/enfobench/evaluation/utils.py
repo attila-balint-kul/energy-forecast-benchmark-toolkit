@@ -51,13 +51,18 @@ def create_forecast_index(history: pd.DataFrame, horizon: int) -> pd.DatetimeInd
         The time index for the forecast horizon.
     """
     last_date = history.index[-1]
-    inferred_freq = history.index.inferred_freq
-    freq = "1" + inferred_freq if not inferred_freq[0].isdigit() else inferred_freq
-    return pd.date_range(
+    freq = history.index.inferred_freq
+    if freq is None:
+        msg = "Cannot create forecast index for a history without frequency"
+        raise ValueError(msg)
+    freq = "1" + freq if not freq[0].isdigit() else freq
+
+    forecast_index = pd.date_range(
         start=last_date + pd.Timedelta(freq),
         periods=horizon,
         freq=freq,
     )
+    return forecast_index
 
 
 def generate_cutoff_dates(

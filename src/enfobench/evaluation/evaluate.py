@@ -6,9 +6,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from enfobench.dataset import Dataset
+from enfobench.core import Dataset, Model
 from enfobench.evaluation.client import ForecastClient
-from enfobench.evaluation.model import Model
 from enfobench.evaluation.utils import create_forecast_index, generate_cutoff_dates, steps_in_horizon
 
 
@@ -131,6 +130,7 @@ def cross_validate(
             history=history,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            metadata=dataset.metadata,
             level=level,
         )
         if not isinstance(forecast, pd.DataFrame) or not isinstance(forecast.index, pd.DatetimeIndex):
