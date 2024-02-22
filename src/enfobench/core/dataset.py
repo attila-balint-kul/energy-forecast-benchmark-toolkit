@@ -4,6 +4,7 @@ from abc import ABCMeta
 from pathlib import Path
 
 import pandas as pd
+from pandas.tseries.frequencies import to_offset
 
 logger = logging.getLogger(__name__)
 
@@ -78,16 +79,20 @@ class Dataset:
     @staticmethod
     def _check_target(y: pd.DataFrame) -> pd.DataFrame:
         if isinstance(y, pd.Series):
-            logger.warning("Target is a Series, converting to DataFrame.")
+            msg = "Target is a Series, converting to DataFrame."
+            warnings.warn(msg, UserWarning, stacklevel=2)
             y = y.to_frame("y")
 
         if not isinstance(y.index, pd.DatetimeIndex):
             msg = f"Target dataframe must have DatetimeIndex, have {y.index.__class__.__name__}."
             raise ValueError(msg)
 
-        if y.index.freq is None:
-            msg = "Target dataframe must have a frequency."
-            raise ValueError(msg)
+        if y.index.inferred_freq is None:
+            msg = "Frequency cannot be inferred from target's index, resampling target."
+            warnings.warn(msg, UserWarning, stacklevel=2)
+            freq = to_offset(y.index[1] - y.index[0]).freqstr
+            freq = "1" + freq if not freq[0].isdigit() else freq
+            y = y.resample(freq).asfreq()
 
         y.rename_axis("timestamp", inplace=True)
         y.sort_index(inplace=True)
