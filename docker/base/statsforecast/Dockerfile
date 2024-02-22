@@ -2,7 +2,7 @@ FROM python:3.11.6-slim-bookworm
 
 WORKDIR /usr/local/app
 
-ARG STATSFORECAST_VERSION=1.5.0
+ARG STATSFORECAST_VERSION
 
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir statsforecast==$STATSFORECAST_VERSION

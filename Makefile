@@ -93,12 +93,22 @@ MODEL_NAME := sf-naive
 IMAGE_TAG := $(ENFOBENCH_VERSION)-$(MODEL_NAME)
 DEFAULT_PORT := 3000
 
+DARTS_VERSION := 0.27.0
+SKTIME_VERSION := 0.24.1
+STATSFORECAST_VERSION := 1.5.0
+
 .PHONY: base-images
 ## Create docker base image
 base-images:
-	docker build --build-arg DARTS_VERSION=0.27.0 -t $(DOCKER_HUB_REPOSITORY):base-u8darts-0.27.0 ./docker/base/darts
-	docker build --build-arg SKTIME_VERSION=0.24.1 -t $(DOCKER_HUB_REPOSITORY):base-sktime-0.24.1 ./docker/base/sktime
-	docker build --build-arg STATSFORECAST_VERSION=1.5.0 -t $(DOCKER_HUB_REPOSITORY):base-statsforecast-1.5.0 ./docker/base/statsforecast
+	docker build --build-arg DARTS_VERSION=$(DARTS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION) ./docker/base/darts
+	docker build --build-arg SKTIME_VERSION=$(SKTIME_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION) ./docker/base/sktime
+	docker build --build-arg STATSFORECAST_VERSION=$(STATSFORECAST_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION) ./docker/base/statsforecast
+
+.PHONY: push-base-images
+push-base-images:
+	docker push $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION)
+	docker push $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION)
+	docker push $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION)
 
 .PHONY: image
 ## Create docker image

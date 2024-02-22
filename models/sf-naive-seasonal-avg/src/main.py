@@ -30,6 +30,7 @@ class SeasonalWindowAverageModel:
         history: pd.DataFrame,
         past_covariates: pd.DataFrame | None = None,
         future_covariates: pd.DataFrame | None = None,
+        metadata: dict | None = None,
         level: list[int] | None = None,
         **kwargs,
     ) -> pd.DataFrame:

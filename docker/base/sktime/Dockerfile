@@ -2,7 +2,7 @@ FROM python:3.11.6-slim-bookworm
 
 WORKDIR /usr/local/app
 
-ARG SKTIME_VERSION=0.24.1
+ARG SKTIME_VERSION
 
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir sktime==$SKTIME_VERSION
