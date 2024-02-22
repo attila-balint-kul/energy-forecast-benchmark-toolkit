@@ -6,7 +6,6 @@ import pandas as pd
 
 from enfobench.core import Subset
 
-
 Metadata = dict[str, Any]
 
 

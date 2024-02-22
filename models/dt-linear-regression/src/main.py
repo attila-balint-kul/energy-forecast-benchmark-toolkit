@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 
 import pandas as pd
 from darts import TimeSeries
@@ -8,11 +9,10 @@ from sklearn.linear_model import LinearRegression
 from enfobench import AuthorInfo, ForecasterType, ModelInfo
 from enfobench.evaluation.server import server_factory
 from enfobench.evaluation.utils import periods_in_duration
-from typing import Literal
 
 
 class DartsLinearRegressionModel:
-    def __init__(self, seasonality: str, model_type: Literal['DirectMultiModel', 'DirectMultiOutput', 'Recursive']):
+    def __init__(self, seasonality: str, model_type: Literal["DirectMultiModel", "DirectMultiOutput", "Recursive"]):
         self.seasonality = seasonality.upper()
         self.model_type = model_type
 
@@ -43,21 +43,21 @@ class DartsLinearRegressionModel:
 
         # Create model
         periods = periods_in_duration(history.index, duration=self.seasonality)
-        if self.model_type == 'Recursive':
+        if self.model_type == "Recursive":
             model = RegressionModel(
                 model=LinearRegression(),
                 lags=list(range(-periods, 0)),
                 output_chunk_length=1,
                 multi_models=False,
             )
-        elif self.model_type == 'DirectMultiOutput':
+        elif self.model_type == "DirectMultiOutput":
             model = RegressionModel(
                 model=LinearRegression(),
                 lags=list(range(-periods, 0)),
                 output_chunk_length=horizon,
                 multi_models=False,
             )
-        elif self.model_type == 'DirectMultiModel':
+        elif self.model_type == "DirectMultiModel":
             model = RegressionModel(
                 model=LinearRegression(),
                 lags=list(range(-periods, 0)),

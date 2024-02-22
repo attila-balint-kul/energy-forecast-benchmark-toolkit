@@ -1,4 +1,4 @@
-from enfobench.datasets.electricity_demand import MetadataSubset, WeatherSubset, DemandSubset, ElectricityDemandDataset
+from enfobench.datasets.electricity_demand import DemandSubset, ElectricityDemandDataset, MetadataSubset, WeatherSubset
 
 __all__ = [
     "ElectricityDemandDataset",

@@ -1,5 +1,5 @@
 from enfobench.core.dataset import Dataset, Subset
-from enfobench.core.model import Model, ModelInfo, AuthorInfo, ForecasterType
+from enfobench.core.model import AuthorInfo, ForecasterType, Model, ModelInfo
 
 __all__ = [
     "Dataset",

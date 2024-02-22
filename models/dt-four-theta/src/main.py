@@ -19,6 +19,7 @@ class DartsFourThetaModel:
     References:
         https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html
     """
+
     def __init__(self, seasonality: str):
         self.seasonality = seasonality.upper()
 
