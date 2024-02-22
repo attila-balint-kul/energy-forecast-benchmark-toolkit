@@ -46,18 +46,19 @@ and download the files from the data folder to your computer.
 ```python
 import pandas as pd
 
-from enfobench.dataset import Dataset, DemandDataset
+from enfobench import Dataset
+from enfobench.datasets import ElectricityDemandDataset
 from enfobench.evaluation import cross_validate, evaluate_metrics
 from enfobench.evaluation.metrics import mean_bias_error, mean_absolute_error, root_mean_squared_error
 
 # Load the dataset from the folder that you downloaded the files to.
-ds = DemandDataset("/path/to/the/dataset/folder/that/contains/all/subsets")
+ds = ElectricityDemandDataset("/path/to/the/dataset/folder/that/contains/all/subsets")
 
 # List all meter ids
-ds.metadata_subset.list_unique_ids()
+ds.list_unique_ids()
 
 # Get one of the meter ids
-unique_id = ds.metadata_subset.list_unique_ids()[0]
+unique_id = ds.list_unique_ids()[0]
 
 # Get dataset for a specific meter id
 target, past_covariates, metadata = ds.get_data_by_unique_id(unique_id)

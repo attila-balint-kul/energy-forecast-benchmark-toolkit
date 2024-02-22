@@ -33,7 +33,7 @@ Load your own data and create a dataset.
 ```python
 import pandas as pd
 
-from enfobench.dataset import Dataset
+from enfobench import Dataset
 
 # Load your datasets
 data = pd.read_csv("../path/to/your/data.csv", parse_dates=['timestamp'], index_col='timestamp')
@@ -46,7 +46,7 @@ past_covariates = data.loc[:, ['covariate_1', 'covariate_2']]
 
 # As sometimes it can be challenging to access historical forecasts to use future covariates, 
 # the package also has a helper function to create perfect historical forecasts from the past covariates.
-from enfobench.dataset.utils import create_perfect_forecasts_from_covariates
+from enfobench.datasets.utils import create_perfect_forecasts_from_covariates
 
 # The example below creates simulated perfect historical forecasts with a horizon of 24 hours and a step of 1 day.
 future_covariates = create_perfect_forecasts_from_covariates(
@@ -56,7 +56,7 @@ future_covariates = create_perfect_forecasts_from_covariates(
 )
 
 dataset = Dataset(
-    target=data['target_column'],
+    target=target,
     past_covariates=past_covariates,
     future_covariates=future_covariates,
 )
@@ -66,13 +66,14 @@ The package integrates with the HuggingFace Dataset ['attila-balint-kul/electric
 To use this, just download all the files from the data folder to your computer.
 
 ```python
-from enfobench.dataset import Dataset, DemandDataset
+from enfobench import Dataset
+from enfobench.datasets import ElectricityDemandDataset
 
 # Load the dataset from the folder that you downloaded the files to.
-ds = DemandDataset("/path/to/the/dataset/folder/that/contains/all/subsets")
+ds = ElectricityDemandDataset("/path/to/the/dataset/folder/that/contains/all/subsets")
 
 # List all meter ids
-ds.metadata_subset.list_unique_ids()
+ds.list_unique_ids()
 
 # Get dataset for a specific meter id
 target, past_covariates, metadata = ds.get_data_by_unique_id("unique_id_of_the_meter")
@@ -101,8 +102,8 @@ model = MyModel()
 cv_results = cross_validate(
     model,
     dataset,
-    start_date=pd.Timestamp("2018-01-01"),
-    end_date=pd.Timestamp("2018-01-31"),
+    start_date=pd.Timestamp("2018-01-01T00:00:00"),
+    end_date=pd.Timestamp("2018-01-31T00:00:00"),
     horizon=pd.Timedelta("24 hours"),
     step=pd.Timedelta("1 day"),
 )
@@ -153,7 +154,7 @@ metrics = evaluate_metrics(
 )
 ```
 
-In order to serve your model behind an API, you can use the built in server factory.
+In order to serve your model behind an API, you can use the built-in server factory.
 
 ```python
 import uvicorn

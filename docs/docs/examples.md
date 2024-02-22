@@ -12,11 +12,11 @@ The examples models are found in the `models/` folder, and the example notebooks
 The repository follows this structure:
 
 ```
-├── README.md                       <- The top-level README for getting started.
 ├── data
-│   ├── demand.parquet              <- Demand data subset.
-│   ├── metadata.parquet            <- Metadata subset.
-│   └── weather.parquet             <- Weather data subset.
+│   └── electricity-demand          <- Electricity demand dataset.
+│       ├── demand.parquet          <- Demand data subset.
+│       ├── metadata.parquet        <- Metadata subset.
+│       └── weather.parquet         <- Weather data subset.
 │
 ├── models                          <- Example models each in its own subfolder.
 │   ├── sf-naive-seasonal           <- Naive seasonal model based on statsforecast package.
@@ -28,9 +28,9 @@ The repository follows this structure:
 ├── notebooks                       <- Jupyter notebooks, should be read in order.
 │   ├── 01. Univariate.ipynb        <- Simple univariate forecast model benchmarking example.
 │   ├── 02. Multivariate.ipynb      <- Multivariate forecast model benchmarking example.
-│   └── 02. ForecastClient.ipynb    <- Benchmarking using the ForecastClient example.
+│   └── 03. ForecastClient.ipynb    <- Benchmarking using the ForecastClient example.
 │
-└── requirements.txt                <- Overall requirements to run all the example notebooks.
+└── README.md                       <- The top-level README for getting started.
 ```
 
 ## Requirements
@@ -52,7 +52,7 @@ pip install notebook enfobench
 ```
 
 To run the notebooks, you also need the HuggingFace dataset [attila-balint-kul/electricity-demand](https://huggingface.co/datasets/attila-balint-kul/electricity-demand).
-Download all three files from the `data/` folder into the `data/` folder of this repository.
+Download all three files from the `data/` folder into the `data/electicity-demand/` folder of this repository.
 
 Run the example notebooks in the `notebooks` folder.
 
