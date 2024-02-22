@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from enfobench.dataset.utils import create_perfect_forecasts_from_covariates
+from enfobench.datasets.utils import create_perfect_forecasts_from_covariates
 
 
 def test_create_perfect_forecasts_from_covariates():

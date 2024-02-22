@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from starlette.testclient import TestClient
 
-from enfobench.evaluation.client import to_buffer
+from enfobench.evaluation.client import df_to_buffer
 from enfobench.evaluation.server import server_factory
 
 
@@ -61,7 +61,7 @@ def test_forecast_endpoint(forecast_client):
             "horizon": horizon,
         },
         files={
-            "history": to_buffer(history_df),
+            "history": df_to_buffer(history_df),
         },
     )
     assert response.status_code == HTTPStatus.OK

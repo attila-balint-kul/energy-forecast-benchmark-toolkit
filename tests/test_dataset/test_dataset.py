@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from enfobench.dataset import Dataset
+from enfobench.core import Dataset
 
 
 @pytest.mark.parametrize("resolution", ["15T", "30T", "1H"])
