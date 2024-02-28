@@ -15,11 +15,16 @@ benchmark forecast models.
 
 **Source code**: https://github.com/attila-balint-kul/energy-forecast-benchmark-toolkit
 
-**Dataset**: https://huggingface.co/datasets/attila-balint-kul/electricity-demand
 
-**Dashboard** https://api.wandb.ai/links/attila-balint-kul/duaehj8c
+## Datasets
 
----
+**Electricity demand**: https://huggingface.co/datasets/attila-balint-kul/electricity-demand
+
+
+## Dashboards
+
+**Electricity demand**: https://api.wandb.ai/links/attila-balint-kul/vqvezsl0
+
 
 ## Table of Contents
 
@@ -100,8 +105,7 @@ To get started with some examples check out the `models` folder and the [example
 ## Benchmarking
 
 Once confident in your model, you can submit for evaluation.
-The results of the benchmarks are openly accessible [here](https://api.wandb.ai/links/attila-balint-kul/duaehj8c
-).
+The results of the benchmarks are openly accessible through various dashboards. The links you can find above.
 
 
 ## Contributing
