@@ -93,42 +93,68 @@ MODEL_NAME := sf-naive
 IMAGE_TAG := $(ENFOBENCH_VERSION)-$(MODEL_NAME)
 DEFAULT_PORT := 3000
 
-DARTS_VERSION := 0.27.0
-SKTIME_VERSION := 0.24.1
+DARTS_VERSION := 0.27.2
+SKTIME_VERSION := 0.26.1
 STATSFORECAST_VERSION := 1.5.0
 
-.PHONY: base-images
-## Create docker base image
-base-images:
+
+.PHONY: base-image-darts
+## Build base image for darts
+base-image-darts:
 	docker build --build-arg DARTS_VERSION=$(DARTS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION) ./docker/base/darts
+
+
+.PHONY: base-image-sktime
+## Build base image for sktime
+base-image-sktime:
 	docker build --build-arg SKTIME_VERSION=$(SKTIME_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION) ./docker/base/sktime
+
+
+.PHONY: base-image-statsforecast
+## Build base image for statsforecast
+base-image-statsforecast:
 	docker build --build-arg STATSFORECAST_VERSION=$(STATSFORECAST_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION) ./docker/base/statsforecast
 
+
+## Build base images
+base-images: base-image-darts \
+			 base-image-sktime \
+			 base-image-statsforecast
+
+
 .PHONY: push-base-images
+## Push base images to Docker Hub
 push-base-images:
 	docker push $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION)
 	docker push $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION)
 	docker push $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION)
 
+
 .PHONY: image
-## Create docker image
+## Build a model image
 image:
 	docker build -t $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG) ./models/$(MODEL_NAME)
 
+
 .PHONY: push-image
-## Push docker image to Docker Hub
+## Push a model image to Docker Hub
 push-image: image
 	docker push $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG)
 
+
 .PHONY: run-image
+## Run a model image
 run-image: image
 	docker run -it --rm -p $(DEFAULT_PORT):3000 $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG)
 
 
 MODELS = $(shell ls -d ./models/* | xargs -n 1 basename)
+## Make all model images
 images:
 	$(foreach var,$(MODELS), $(MAKE) image MODEL_NAME=$(var);)
 
+
+## Push images to Docker Hub
 push-images:
 	$(foreach var,$(MODELS), $(MAKE) push-image MODEL_NAME=$(var);)
 
