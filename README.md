@@ -18,7 +18,7 @@ benchmark forecast models.
 
 ## Datasets
 
-**Electricity demand**: https://huggingface.co/datasets/attila-balint-kul/electricity-demand
+**Electricity demand**: https://huggingface.co/datasets/EDS-lab/electricity-demand
 
 
 ## Dashboards
@@ -45,7 +45,7 @@ pip install enfobench
 
 ## Usage
 
-Download the HuggingFace Dataset ['attila-balint-kul/electricity-demand'](https://huggingface.co/datasets/attila-balint-kul/electricity-demand),
+Download the HuggingFace Dataset ['EDS-lab/electricity-demand'](https://huggingface.co/datasets/EDS-lab/electricity-demand),
 and download the files from the data folder to your computer.
 
 ```python
