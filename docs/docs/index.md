@@ -62,7 +62,7 @@ dataset = Dataset(
 )
 ```
 
-The package integrates with the HuggingFace Dataset ['attila-balint-kul/electricity-demand'](https://huggingface.co/datasets/attila-balint-kul/electricity-demand). 
+The package integrates with the HuggingFace Dataset ['EDS-lab/electricity-demand'](https://huggingface.co/datasets/EDS-lab/electricity-demand). 
 To use this, just download all the files from the data folder to your computer.
 
 ```python

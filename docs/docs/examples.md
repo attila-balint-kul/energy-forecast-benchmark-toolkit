@@ -51,7 +51,7 @@ Install the requirements (recommended inside a virtual environment):
 pip install notebook enfobench
 ```
 
-To run the notebooks, you also need the HuggingFace dataset [attila-balint-kul/electricity-demand](https://huggingface.co/datasets/attila-balint-kul/electricity-demand).
+To run the notebooks, you also need the HuggingFace dataset [EDS-lab/electricity-demand](https://huggingface.co/datasets/EDS-lab/electricity-demand).
 Download all three files from the `data/` folder into the `data/electicity-demand/` folder of this repository.
 
 Run the example notebooks in the `notebooks` folder.

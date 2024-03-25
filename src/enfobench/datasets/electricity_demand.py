@@ -133,7 +133,7 @@ class ElectricityDemandDataset:
                    This directory should contain all the subset files.
     """
 
-    HUGGINGFACE_DATASET = "attila-balint-kul/electricity-demand"
+    HUGGINGFACE_DATASET = "EDS-lab/electricity-demand"
     SUBSETS = ("demand", "metadata", "weather")
 
     def __init__(self, directory: Path | str) -> None:
