@@ -1,8 +1,7 @@
-from enfobench.datasets.electricity_demand import DemandSubset, ElectricityDemandDataset, MetadataSubset, WeatherSubset
+from enfobench.datasets.electricity_demand import ElectricityDemandDataset
+from enfobench.datasets.pv_generation import PVGenerationDataset
 
 __all__ = [
     "ElectricityDemandDataset",
-    "DemandSubset",
-    "MetadataSubset",
-    "WeatherSubset",
+    "PVGenerationDataset",
 ]

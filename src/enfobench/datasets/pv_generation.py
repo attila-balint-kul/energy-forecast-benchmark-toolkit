@@ -92,15 +92,15 @@ class WeatherSubset(Subset):
         return df
 
 
-class DemandSubset(Subset):
-    """Data subset of the HuggingFace dataset containing all electricity load data.
+class GenerationSubset(Subset):
+    """Data subset of the HuggingFace dataset containing all pv generation data.
 
     Args:
         file_path: The path to the subset file.
     """
 
     def get_by_unique_id(self, unique_id: str):
-        """Returns the demand data for the given unique id.
+        """Returns the generation data for the given unique id.
 
         Args:
             unique_id: The unique id of the meter.
@@ -122,8 +122,8 @@ class DemandSubset(Subset):
         return df
 
 
-class ElectricityDemandDataset(DatasetBase):
-    """ElectricityDemandDataset class representing the HuggingFace dataset.
+class PVGenerationDataset(DatasetBase):
+    """PVGenerationDataset class representing the HuggingFace dataset.
 
     This class is a collection of all subsets inside HuggingFace dataset.
     It provides an easy way to access the different subsets.
@@ -133,8 +133,8 @@ class ElectricityDemandDataset(DatasetBase):
                    This directory should contain all the subset files.
     """
 
-    HUGGINGFACE_DATASET = "EDS-lab/electricity-demand"
-    SUBSETS = ("demand", "metadata", "weather")
+    HUGGINGFACE_DATASET = "EDS-lab/pv-generation"
+    SUBSETS = ("generation", "metadata", "weather")
 
     @property
     def metadata_subset(self) -> MetadataSubset:
@@ -147,9 +147,9 @@ class ElectricityDemandDataset(DatasetBase):
         return WeatherSubset(self._get_subset_path("weather"))
 
     @property
-    def demand_subset(self) -> DemandSubset:
-        """Returns the demand subset."""
-        return DemandSubset(self._get_subset_path("demand"))
+    def generation_subset(self) -> GenerationSubset:
+        """Returns the generation subset."""
+        return GenerationSubset(self._get_subset_path("generation"))
 
     def list_unique_ids(self) -> list[str]:
         return self.metadata_subset.list_unique_ids()
@@ -161,6 +161,6 @@ class ElectricityDemandDataset(DatasetBase):
         metadata = self.metadata_subset.get_by_unique_id(unique_id)
         location_id = metadata["location_id"]
 
-        demand = self.demand_subset.get_by_unique_id(unique_id)
+        generation = self.generation_subset.get_by_unique_id(unique_id)
         weather = self.weather_subset.get_by_location_id(location_id)
-        return demand, weather, metadata
+        return generation, weather, metadata
