@@ -2,7 +2,6 @@
 # GLOBALS                                                                       #
 #################################################################################
 
-PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 PROJECT_NAME = energy-forecast-benchmark-toolkit
 PACKAGE_NAME = enfobench
 PYTHON_INTERPRETER ?= python3
@@ -14,8 +13,8 @@ PYTHON_INTERPRETER ?= python3
 ## Create python virtual environment
 venv/bin/python:
 	( \
-		$(PYTHON_INTERPRETER) -m venv $(PROJECT_DIR)/venv; \
-		source $(PROJECT_DIR)/venv/bin/activate; \
+		$(PYTHON_INTERPRETER) -m venv ./venv; \
+		source ./venv/bin/activate; \
 		pip install --upgrade pip; \
 	)
 
@@ -23,7 +22,7 @@ venv/bin/python:
 ## Install project dependencies
 install: venv/bin/python
 	(\
-		source $(PROJECT_DIR)/venv/bin/activate; \
+		source ./venv/bin/activate; \
 		pip install -e .; \
     )
 
@@ -84,6 +83,16 @@ publish-test: build
 
 
 #################################################################################
+# CLONING RULES                                                                 #
+#################################################################################
+
+.PHONY: download-amazon-chronos
+download-amazon-chronos:
+	git clone https://huggingface.co/amazon/chronos-t5-tiny ./models/amazon-chronos/models/chronos-t5-tiny
+	git clone https://huggingface.co/amazon/chronos-t5-small ./models/amazon-chronos/models/chronos-t5-small
+
+
+#################################################################################
 # MODEL RULES                                                                   #
 #################################################################################
 
@@ -96,6 +105,7 @@ DEFAULT_PORT := 3000
 DARTS_VERSION := 0.27.2
 SKTIME_VERSION := 0.26.1
 STATSFORECAST_VERSION := 1.5.0
+CHRONOS_VERSION := 1.1.0
 
 
 .PHONY: base-image-darts
@@ -116,10 +126,16 @@ base-image-statsforecast:
 	docker build --build-arg STATSFORECAST_VERSION=$(STATSFORECAST_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION) ./docker/base/statsforecast
 
 
+.PHONY: base-image-amazon-chronos
+base-image-amazon-chronos:
+	docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION) ./docker/base/amazon-chronos
+
+
 ## Build base images
 base-images: base-image-darts \
 			 base-image-sktime \
-			 base-image-statsforecast
+			 base-image-statsforecast \
+			 base-image-amazon-chronos
 
 
 .PHONY: push-base-images
@@ -128,6 +144,7 @@ push-base-images:
 	docker push $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION)
 	docker push $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION)
 	docker push $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION)
+	docker push $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION)
 
 
 .PHONY: image

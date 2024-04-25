@@ -1,0 +1,2 @@
+  # Chronos repository
+enfobench>=0.6.0,<0.7.0
