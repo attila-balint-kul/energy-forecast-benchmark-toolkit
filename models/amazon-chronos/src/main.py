@@ -76,8 +76,8 @@ class AmazonChronosModel:
         return forecast
 
 
-model_name = os.getenv("MODEL_NAME")
-num_samples = int(os.getenv("NUM_SAMPLES"))
+model_name = os.getenv("ENFOBENCH_MODEL_NAME")
+num_samples = int(os.getenv("ENFOBENCH_NUM_SAMPLES"))
 
 # Instantiate your model
 model = AmazonChronosModel(model_name=model_name, num_samples=num_samples)
