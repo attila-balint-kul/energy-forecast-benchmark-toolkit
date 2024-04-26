@@ -109,6 +109,20 @@ download-amazon-chronos: models/amazon-chronos/models/chronos-t5-tiny \
 						 models/amazon-chronos/models/chronos-t5-large
 
 
+
+models/salesforce-moirai/models/moirai-1.0-R-small:
+	git clone https://huggingface.co/salesforce/moirai-1.0-R-small ./models/salesforce-moirai/models/moirai-1.0-R-small
+
+models/salesforce-moirai/models/moirai-1.0-R-base:
+	git clone https://huggingface.co/salesforce/moirai-1.0-R-base ./models/salesforce-moirai/models/moirai-1.0-R-base
+
+models/salesforce-moirai/models/moirai-1.0-R-large:
+	git clone https://huggingface.co/salesforce/moirai-1.0-R-large ./models/salesforce-moirai/models/moirai-1.0-R-large
+
+download-salesforce-moirai: models/salesforce-moirai/models/moirai-1.0-R-small \
+							models/salesforce-moirai/models/moirai-1.0-R-base \
+							models/salesforce-moirai/models/moirai-1.0-R-large
+
 #################################################################################
 # MODEL RULES                                                                   #
 #################################################################################
@@ -148,11 +162,17 @@ base-image-amazon-chronos:
 	docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION) ./docker/base/amazon-chronos
 
 
+.PHONY: base-image-salesforce-moirai
+base-image-salesforce-moirai:
+	docker build -t $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai ./docker/base/salesforce-moirai
+
+
 ## Build base images
 base-images: base-image-darts \
 			 base-image-sktime \
 			 base-image-statsforecast \
-			 base-image-amazon-chronos
+			 base-image-amazon-chronos \
+			 base-image-salesforce-moirai
 
 
 .PHONY: push-base-images
@@ -162,6 +182,7 @@ push-base-images:
 	docker push $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION)
 	docker push $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION)
 	docker push $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION)
+	docker push $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai
 
 
 .PHONY: image
