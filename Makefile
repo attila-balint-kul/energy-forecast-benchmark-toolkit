@@ -86,10 +86,27 @@ publish-test: build
 # CLONING RULES                                                                 #
 #################################################################################
 
-.PHONY: download-amazon-chronos
-download-amazon-chronos:
+
+models/amazon-chronos/models/chronos-t5-tiny:
 	git clone https://huggingface.co/amazon/chronos-t5-tiny ./models/amazon-chronos/models/chronos-t5-tiny
+
+models/amazon-chronos/models/chronos-t5-mini:
+	git clone https://huggingface.co/amazon/chronos-t5-mini ./models/amazon-chronos/models/chronos-t5-mini
+
+models/amazon-chronos/models/chronos-t5-small:
 	git clone https://huggingface.co/amazon/chronos-t5-small ./models/amazon-chronos/models/chronos-t5-small
+
+models/amazon-chronos/models/chronos-t5-base:
+	git clone https://huggingface.co/amazon/chronos-t5-base ./models/amazon-chronos/models/chronos-t5-base
+
+models/amazon-chronos/models/chronos-t5-large:
+	git clone https://huggingface.co/amazon/chronos-t5-large ./models/amazon-chronos/models/chronos-t5-large --progress
+
+download-amazon-chronos: models/amazon-chronos/models/chronos-t5-tiny \
+						 models/amazon-chronos/models/chronos-t5-mini \
+						 models/amazon-chronos/models/chronos-t5-small \
+						 models/amazon-chronos/models/chronos-t5-base \
+						 models/amazon-chronos/models/chronos-t5-large
 
 
 #################################################################################
