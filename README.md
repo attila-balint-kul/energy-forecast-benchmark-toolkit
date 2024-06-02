@@ -16,14 +16,14 @@ benchmark forecast models.
 
 ## Datasets
 
-- **Electricity demand**: https://huggingface.co/datasets/EDS-lab/electricity-demand
-- **PV generation**: https://huggingface.co/datasets/EDS-lab/pv-generation
+- **[Electricity demand](https://huggingface.co/datasets/EDS-lab/electricity-demand)**
+- **[PV generation](https://huggingface.co/datasets/EDS-lab/pv-generation)**
 
 
 ## Dashboards
 
-- **[Electricity demand](https://wandb.ai/attila-balint-kul/enfobench-electricity-demand/reports/EnFoBench-Electricity-Demand-Dashboard--Vmlldzo3MzQzMjI1?accessToken=ek6ugj7oop5iwbu7ppeajpjshtnzk2k7qir2zn40n2ghx9zlcwa15szg5ib742mt)**
-- **[PV generation](https://wandb.ai/attila-balint-kul/enfobench-pv-generation/reports/EnFoBench-PV-Generation-Dashboard--Vmlldzo3MzQzMjM0?accessToken=jzwwf0p4ymntyxdf5peqalzb7afjq5nfjvud2m3370scf5ct2nkyf6xggz6zvxng)**
+- **[Electricity demand](https://huggingface.co/spaces/EDS-lab/EnFoBench-ElectricityDemand)**
+- **[PV generation](https://huggingface.co/spaces/EDS-lab/EnFoBench-PVGeneration)**
 
 
 ## Table of Contents
