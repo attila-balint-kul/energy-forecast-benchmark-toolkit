@@ -44,15 +44,28 @@ class NixtlaTimeGPTModel:
         history = history.fillna(history.y.mean())
 
         # Rate limit forecast requests
-        self.limiter.try_acquire(name=f"{history.index[-1]}")
-        # Make request
-        timegpt_fcst_df = self.client.forecast(
-            df=history,
-            h=horizon,
-            level=level,
-            model=self.model,
-            target_col="y",
-        )
+
+        # Retry a function call max 5 times
+        max_retries = 5
+        n_tries = 0
+        while n_tries < max_retries:
+            try:
+                self.limiter.try_acquire(name=f"{history.index[-1]}")
+                timegpt_fcst_df = self.client.forecast(
+                    df=history,
+                    h=horizon,
+                    level=level,
+                    model=self.model,
+                    target_col="y",
+                )
+                break
+            except Exception as e:
+                logger.exception(e)
+                n_tries += 1
+
+            if n_tries == max_retries:
+                msg = f"Could not make forecast after {max_retries} retries."
+                raise ValueError(msg)
 
         # post-process forecast
         forecast = timegpt_fcst_df.rename(columns={"TimeGPT": 'yhat'})

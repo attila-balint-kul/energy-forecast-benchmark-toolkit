@@ -7,7 +7,7 @@ from gluonts.dataset.pandas import PandasDataset
 
 from enfobench import AuthorInfo, ForecasterType, ModelInfo
 from enfobench.evaluation.server import server_factory
-from enfobench.evaluation.utils import create_forecast_index
+from enfobench.evaluation.utils import create_forecast_index, periods_in_duration
 from uni2ts.model.moirai import MoiraiForecast
 
 
@@ -17,20 +17,22 @@ root_dir = Path(__file__).parent.parent
 
 
 class SalesForceMoraiModel:
-    def __init__(self, model_name: str, num_samples: int):
+    def __init__(self, model_name: str, num_samples: int, ctx_length: str | None = None):
         self.model_name = model_name
         self.num_samples = num_samples
+        self.ctx_length = ctx_length
         self.size = model_name.split("-")[-1]
 
     def info(self) -> ModelInfo:
         return ModelInfo(
-            name=f'Salesforce.Moirai-1.0-R.{self.size.capitalize()}',
+            name=f'Salesforce.Moirai-1.0-R.{self.size.capitalize()}{f".CTX{self.ctx_length}" if self.ctx_length else ""}',
             authors=[
                 AuthorInfo(name="Attila Balint", email="attila.balint@kuleuven.be"),
             ],
             type=ForecasterType.quantile,
             params={
                 "num_samples": self.num_samples,
+                "ctx_length": self.ctx_length,
             },
         )
 
@@ -55,16 +57,22 @@ class SalesForceMoraiModel:
             raise FileNotFoundError(
                 f"Model directory for {self.model_name} was not found at {model_dir}, make sure it is downloaded."
             )
+
+        if self.ctx_length is None:
+            ctx_length = len(history)
+        else:
+            ctx_length = min(periods_in_duration(history.index, duration=self.ctx_length), len(history))
+
         # Prepare pre-trained model
         model = MoiraiForecast.load_from_checkpoint(
             checkpoint_path=str(model_dir / 'model.ckpt'),
             prediction_length=horizon,
-            context_length=len(history),
+            context_length=ctx_length,
             patch_size='auto',
             num_samples=self.num_samples,
             target_dim=1,
-            feat_dynamic_real_dim=ds.num_feat_dynamic_real,
-            past_feat_dynamic_real_dim=ds.num_past_feat_dynamic_real,
+            feat_dynamic_real_dim=0,
+            past_feat_dynamic_real_dim=0,
             map_location=device,
         )
 
@@ -81,9 +89,10 @@ class SalesForceMoraiModel:
 
 model_name = os.getenv("ENFOBENCH_MODEL_NAME", "small")
 num_samples = int(os.getenv("ENFOBENCH_NUM_SAMPLES", 1))
+ctx_length = os.getenv("ENFOBENCH_CTX_LENGTH")
 
 # Instantiate your model
-model = SalesForceMoraiModel(model_name=model_name, num_samples=num_samples)
+model = SalesForceMoraiModel(model_name=model_name, num_samples=num_samples, ctx_length=ctx_length)
 
 # Create a forecast server by passing in your model
 app = server_factory(model)
