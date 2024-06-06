@@ -7,7 +7,7 @@ from chronos import ChronosPipeline
 
 from enfobench import AuthorInfo, ForecasterType, ModelInfo
 from enfobench.evaluation.server import server_factory
-from enfobench.evaluation.utils import create_forecast_index
+from enfobench.evaluation.utils import create_forecast_index, periods_in_duration
 
 # Check for GPU availability
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -15,20 +15,21 @@ root_dir = Path(__file__).parent.parent
 
 
 class AmazonChronosModel:
-
-    def __init__(self, model_name: str, num_samples: int):
+    def __init__(self, model_name: str, num_samples: int, ctx_length: str | None = None):
         self.model_name = model_name
         self.num_samples = num_samples
+        self.ctx_length = ctx_length
 
     def info(self) -> ModelInfo:
         return ModelInfo(
-            name=f'Amazon.{".".join(map(str.capitalize, self.model_name.split("-")))}',
+            name=f'Amazon.{".".join(map(str.capitalize, self.model_name.split("-")))}{".CTX" + self.ctx_length if self.ctx_length else ""}',
             authors=[
                 AuthorInfo(name="Attila Balint", email="attila.balint@kuleuven.be"),
             ],
             type=ForecasterType.quantile,
             params={
                 "num_samples": self.num_samples,
+                "ctx_length": self.ctx_length,
             },
         )
 
@@ -58,7 +59,12 @@ class AmazonChronosModel:
 
         # context must be either a 1D tensor, a list of 1D tensors,
         # or a left-padded 2D tensor with batch as the first dimension
-        context = torch.tensor(history.y)
+        if self.ctx_length is None:
+            context = torch.tensor(history.y)
+        else:
+            ctx_length = min(periods_in_duration(history.index, duration=self.ctx_length), len(history))
+            context = torch.tensor(history.y[-ctx_length:])
+
         prediction_length = horizon
         forecasts = pipeline.predict(
             context,
@@ -78,9 +84,10 @@ class AmazonChronosModel:
 
 model_name = os.getenv("ENFOBENCH_MODEL_NAME")
 num_samples = int(os.getenv("ENFOBENCH_NUM_SAMPLES"))
+ctx_length = os.getenv("ENFOBENCH_CTX_LENGTH")
 
 # Instantiate your model
-model = AmazonChronosModel(model_name=model_name, num_samples=num_samples)
+model = AmazonChronosModel(model_name=model_name, num_samples=num_samples, ctx_length=ctx_length)
 
 # Create a forecast server by passing in your model
 app = server_factory(model)
