@@ -38,7 +38,7 @@ class ModelInfo(BaseModel):
 
     name: str
     authors: list[AuthorInfo]
-    type: ForecasterType  # noqa: A003
+    type: ForecasterType
     params: dict[str, Any]
 
 

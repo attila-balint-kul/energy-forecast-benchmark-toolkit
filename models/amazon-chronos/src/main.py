@@ -21,8 +21,13 @@ class AmazonChronosModel:
         self.ctx_length = ctx_length
 
     def info(self) -> ModelInfo:
+        name = (
+            "Amazon."
+            f'{".".join(map(str.capitalize, self.model_name.split("-")))}'
+            f'{".CTX" + self.ctx_length if self.ctx_length else ""}'
+        )
         return ModelInfo(
-            name=f'Amazon.{".".join(map(str.capitalize, self.model_name.split("-")))}{".CTX" + self.ctx_length if self.ctx_length else ""}',
+            name=name,
             authors=[
                 AuthorInfo(name="Attila Balint", email="attila.balint@kuleuven.be"),
             ],
@@ -48,9 +53,9 @@ class AmazonChronosModel:
 
         model_dir = root_dir / "models" / self.model_name
         if not model_dir.exists():
-            raise FileNotFoundError(
-                f"Model directory for {self.model_name} was not found at {model_dir}, make sure it is downloaded."
-            )
+            msg = f"Model directory for {self.model_name} was not found at {model_dir}, make sure it is downloaded."
+            raise FileNotFoundError(msg)
+
         pipeline = ChronosPipeline.from_pretrained(
             model_dir,
             device_map=device,

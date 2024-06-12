@@ -38,13 +38,12 @@ class ModelInfo:
 
     name: str
     authors: list[AuthorInfo]
-    type: ForecasterType  # noqa: A003
+    type: ForecasterType
     params: dict[str, Any] = field(default_factory=dict)
 
 
 class Model(Protocol):
-    def info(self) -> ModelInfo:
-        ...
+    def info(self) -> ModelInfo: ...
 
     def forecast(
         self,
@@ -55,5 +54,4 @@ class Model(Protocol):
         metadata: dict | None = None,
         level: list[int] | None = None,
         **kwargs,
-    ) -> pd.DataFrame:
-        ...
+    ) -> pd.DataFrame: ...

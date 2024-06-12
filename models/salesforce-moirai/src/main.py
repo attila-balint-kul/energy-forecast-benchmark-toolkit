@@ -4,12 +4,11 @@ from pathlib import Path
 import pandas as pd
 import torch
 from gluonts.dataset.pandas import PandasDataset
+from uni2ts.model.moirai import MoiraiForecast
 
 from enfobench import AuthorInfo, ForecasterType, ModelInfo
 from enfobench.evaluation.server import server_factory
 from enfobench.evaluation.utils import create_forecast_index, periods_in_duration
-from uni2ts.model.moirai import MoiraiForecast
-
 
 # Check for GPU availability
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -24,8 +23,13 @@ class SalesForceMoraiModel:
         self.size = model_name.split("-")[-1]
 
     def info(self) -> ModelInfo:
+        name = (
+            "Salesforce.Moirai-1.0-R."
+            f'{self.size.capitalize()}'
+            f'{f".CTX{self.ctx_length}" if self.ctx_length else ""}'
+        )
         return ModelInfo(
-            name=f'Salesforce.Moirai-1.0-R.{self.size.capitalize()}{f".CTX{self.ctx_length}" if self.ctx_length else ""}',
+            name=name,
             authors=[
                 AuthorInfo(name="Attila Balint", email="attila.balint@kuleuven.be"),
             ],
@@ -54,9 +58,8 @@ class SalesForceMoraiModel:
 
         model_dir = root_dir / "models" / self.model_name
         if not model_dir.exists():
-            raise FileNotFoundError(
-                f"Model directory for {self.model_name} was not found at {model_dir}, make sure it is downloaded."
-            )
+            msg = f"Model directory for {self.model_name} was not found at {model_dir}, make sure it is downloaded."
+            raise FileNotFoundError(msg)
 
         if self.ctx_length is None:
             ctx_length = len(history)
@@ -65,10 +68,10 @@ class SalesForceMoraiModel:
 
         # Prepare pre-trained model
         model = MoiraiForecast.load_from_checkpoint(
-            checkpoint_path=str(model_dir / 'model.ckpt'),
+            checkpoint_path=str(model_dir / "model.ckpt"),
             prediction_length=horizon,
             context_length=ctx_length,
-            patch_size='auto',
+            patch_size="auto",
             num_samples=self.num_samples,
             target_dim=1,
             feat_dynamic_real_dim=0,
@@ -88,7 +91,7 @@ class SalesForceMoraiModel:
 
 
 model_name = os.getenv("ENFOBENCH_MODEL_NAME", "small")
-num_samples = int(os.getenv("ENFOBENCH_NUM_SAMPLES", 1))
+num_samples = int(os.getenv("ENFOBENCH_NUM_SAMPLES", "1"))
 ctx_length = os.getenv("ENFOBENCH_CTX_LENGTH")
 
 # Instantiate your model

@@ -17,12 +17,14 @@ benchmark forecast models.
 ## Datasets
 
 - **[Electricity demand](https://huggingface.co/datasets/EDS-lab/electricity-demand)**
+- **[Gas demand](https://huggingface.co/datasets/EDS-lab/gas-demand)**
 - **[PV generation](https://huggingface.co/datasets/EDS-lab/pv-generation)**
 
 
 ## Dashboards
 
 - **[Electricity demand](https://huggingface.co/spaces/EDS-lab/EnFoBench-ElectricityDemand)**
+- **[Gas demand](https://huggingface.co/spaces/EDS-lab/EnFoBench-GasDemand)**
 - **[PV generation](https://huggingface.co/spaces/EDS-lab/EnFoBench-PVGeneration)**
 
 

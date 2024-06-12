@@ -3,7 +3,7 @@ import os
 
 import pandas as pd
 from nixtla import NixtlaClient
-from pyrate_limiter import Duration, Rate, Limiter, BucketFullException
+from pyrate_limiter import Duration, Limiter, Rate
 
 from enfobench import AuthorInfo, ForecasterType, ModelInfo
 from enfobench.evaluation.server import server_factory
@@ -68,14 +68,14 @@ class NixtlaTimeGPTModel:
                 raise ValueError(msg)
 
         # post-process forecast
-        forecast = timegpt_fcst_df.rename(columns={"TimeGPT": 'yhat'})
-        forecast['timestamp'] = pd.to_datetime(forecast.timestamp)
+        forecast = timegpt_fcst_df.rename(columns={"TimeGPT": "yhat"})
+        forecast["timestamp"] = pd.to_datetime(forecast.timestamp)
         forecast = forecast.set_index("timestamp")
         return forecast
 
 
 api_key = os.getenv("NIXTLA_API_KEY")
-long_horizon = bool(int(os.getenv("ENFOBENCH_MODEL_LONG_HORIZON", 0)))
+long_horizon = bool(int(os.getenv("ENFOBENCH_MODEL_LONG_HORIZON", "0")))
 
 # Instantiate your model
 model = NixtlaTimeGPTModel(api_key=api_key, long_horizon=long_horizon)

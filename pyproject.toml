@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Energy forecast benchmarking toolkit."
 readme = "README.md"
 requires-python = ">=3.10"
-license = "BSD-2-clause"
+license = "BSD-3-clause"
 keywords = [
     "energy",
     "forecasting",
@@ -82,6 +82,7 @@ dependencies = [
     "pytest",
     "pytest-cov",
     "httpx",
+    "setuptools",  # needed to import pkg_resources
 ]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
@@ -100,12 +101,12 @@ dependencies = [
 [tool.hatch.envs.lint.scripts]
 typing = "mypy --install-types --non-interactive {args:src/enfobench tests}"
 style = [
-    "ruff {args:.}",
+    "ruff check {args:.}",
     "black --check --diff {args:.}",
 ]
 fmt = [
     "black {args:.}",
-    "ruff --fix {args:.}",
+    "ruff check --fix {args:.}",
     "style",
 ]
 all = [
@@ -130,6 +131,8 @@ skip-string-normalization = true
 [tool.ruff]
 target-version = "py310"
 line-length = 120
+
+[tool.ruff.lint]
 select = [
     "A",
     "ARG",
@@ -172,13 +175,13 @@ unfixable = [
     "F401",
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["enfobench"]
 
-[tool.ruff.flake8-tidy-imports]
+[tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
 "models/**/*" = ["ARG001", "ARG002", "FBT001"]
