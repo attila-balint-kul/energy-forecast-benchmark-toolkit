@@ -59,7 +59,7 @@ class AmazonChronosModel:
         pipeline = ChronosPipeline.from_pretrained(
             model_dir,
             device_map=device,
-            torch_dtype=torch.bfloat16,
+            torch_dtype=torch.float32,
         )
 
         # context must be either a 1D tensor, a list of 1D tensors,
