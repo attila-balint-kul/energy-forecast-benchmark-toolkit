@@ -5,10 +5,11 @@ WORKDIR /usr/local/app
 COPY ./requirements.txt /usr/local/app/requirements.txt
 RUN pip install --no-cache-dir -r /usr/local/app/requirements.txt
 
-COPY ./models /usr/local/app/models
+ARG MODEL_SIZE
+COPY ./models/chronos-t5-${MODEL_SIZE} /usr/local/app/models/chronos-t5-${MODEL_SIZE}
 COPY ./src /usr/local/app/src
 
-ENV ENFOBENCH_MODEL_NAME="chronos-t5-tiny"
+ENV ENFOBENCH_MODEL_NAME="chronos-t5-${MODEL_SIZE}"
 ENV ENFOBENCH_NUM_SAMPLES="1"
 
 EXPOSE 3000
