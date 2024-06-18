@@ -17,7 +17,8 @@ def test_get_history(helpers, resolution):
     assert isinstance(history.index, pd.DatetimeIndex)
     assert "y" in history.columns
     assert len(history.columns) == 1
-    assert (history.index < cutoff_date).all()
+    assert cutoff_date in history.index
+    assert (history.index <= cutoff_date).all()
 
 
 @pytest.mark.parametrize("resolution", ["15T", "30T", "1H"])
@@ -39,7 +40,8 @@ def test_get_past_covariates(helpers, resolution):
     assert isinstance(past_cov.index, pd.DatetimeIndex)
     assert "a" in past_cov.columns
     assert "b" in past_cov.columns
-    assert (past_cov.index < cutoff_date).all()
+    assert cutoff_date in past_cov.index
+    assert (past_cov.index <= cutoff_date).all()
 
 
 @pytest.mark.parametrize("resolution", ["6H", "1D"])

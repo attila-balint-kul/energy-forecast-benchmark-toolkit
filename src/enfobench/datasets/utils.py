@@ -25,11 +25,20 @@ def create_perfect_forecasts_from_covariates(
         The external forecast dataframe.
     """
     start = start or past_covariates.index[0]
+
+    if start < past_covariates.index[0]:
+        msg = f"start={start} must be after the start of the past_covariates={past_covariates.index[0]}"
+        raise ValueError(msg)
+
+    if start > past_covariates.index[-1]:
+        msg = f"start={start} must be before the end of the past_covariates={past_covariates.index[-1]}"
+        raise ValueError(msg)
+
     last_date = past_covariates.index[-1]
 
     forecasts = []
     while start + horizon <= last_date:
-        forecast = past_covariates.loc[(past_covariates.index >= start) & (past_covariates.index < start + horizon)]
+        forecast = past_covariates.loc[start : start + horizon]
         forecast.rename_axis("timestamp", inplace=True)
         forecast.reset_index(inplace=True)
         forecast.insert(0, "cutoff_date", pd.to_datetime(start, unit="ns"))

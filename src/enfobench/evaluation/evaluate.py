@@ -105,15 +105,23 @@ def cross_validate(
         level: Prediction intervals to compute. (Optional, if not provided, simple point forecasts will be computed.)
     """
     if start_date <= dataset.target_available_since:
-        msg = f"Start date must be after the start of the dataset: {start_date} <= {dataset.target_available_since}."
+        msg = f"start_date={start_date} must be after the start of the dataset={dataset.target_available_since}"
+        raise ValueError(msg)
+
+    if start_date >= dataset.target_available_until:
+        msg = f"start_date={start_date} must be before the end of the dataset={dataset.target_available_until}"
         raise ValueError(msg)
 
     initial_training_data = start_date - dataset.target_available_since
     if initial_training_data < pd.Timedelta("7 days"):
         warnings.warn("Initial training data is less than 7 days.", stacklevel=2)
 
+    if end_date < dataset.target_available_since:
+        msg = f"end_date={end_date} must be after the start of the dataset={dataset.target_available_since}"
+        raise ValueError(msg)
+
     if end_date > dataset.target_available_until:
-        msg = f"End date must be before the end of the dataset: {end_date} > {dataset.target_available_until}."
+        msg = f"end_date={end_date} must be before the end of the dataset={dataset.target_available_until}"
         raise ValueError(msg)
 
     cutoff_dates = generate_cutoff_dates(start_date, end_date, horizon, step)

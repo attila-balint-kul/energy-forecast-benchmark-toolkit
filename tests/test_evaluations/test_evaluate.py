@@ -12,24 +12,32 @@ from enfobench.evaluation.server import server_factory
 
 
 def test_cross_validate_univariate_locally(helpers, model):
-    dataset = helpers.generate_univariate_dataset(start="2020-01-01", end="2020-03-01", freq="30T")
+    dataset = helpers.generate_univariate_dataset(start="2020-01-01", end="2021-01-01", freq="30T")
 
-    forecasts = cross_validate(
-        model=model,
-        dataset=dataset,
-        start_date=pd.Timestamp("2020-02-01 10:00:00"),
-        end_date=pd.Timestamp("2020-03-01"),
-        horizon=pd.Timedelta("38 hours"),
-        step=pd.Timedelta("1 day"),
-    )
+    start_date = pd.Timestamp("2020-02-01 10:00:00")
+    end_date = pd.Timestamp("2020-04-01")
+    horizon = pd.Timedelta("38 hours")
+    step = pd.Timedelta("1 day")
+
+    forecasts = cross_validate(model, dataset, start_date=start_date, end_date=end_date, horizon=horizon, step=step)
 
     assert isinstance(forecasts, pd.DataFrame)
-    assert "timestamp" in forecasts.columns
     assert "y" in forecasts.columns
     assert "yhat" in forecasts.columns
+
+    assert "timestamp" in forecasts.columns
+    assert (forecasts.timestamp > start_date).all()
+    assert forecasts.timestamp.iloc[-1] == end_date
+
     assert "cutoff_date" in forecasts.columns
+    assert (start_date.time() == forecasts.cutoff_date.dt.time).all()
+
+    for cutoff_date, forecast in forecasts.groupby("cutoff_date"):
+        assert len(forecast) == 38 * 2  # 38 hours with half-hour series
+        assert (forecast.timestamp > cutoff_date).all()
+
     assert list(forecasts.cutoff_date.unique()) == list(
-        pd.date_range(start="2020-02-01 10:00:00", end="2020-02-28 10:00:00", freq="1D", inclusive="both")
+        pd.date_range(start="2020-02-01 10:00:00", end="2020-03-30 10:00:00", freq="1D", inclusive="both")
     )
 
 

@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import time, timedelta
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,7 +14,10 @@ try:
     from matplotlib.ticker import LinearLocator, MultipleLocator
     from statsmodels.graphics import tsaplots
 except ImportError as e:
-    msg = f"Missing optional dependency '{e.name}'. Use pip or conda to install it."
+    msg = (
+        f"Missing optional dependency '{e.name}'. Use pip or conda to install it. "
+        "Alternatively you can enfobench[visualization] to install all dependencies for plotting."
+    )
     raise ImportError(msg) from e
 
 
@@ -49,6 +52,23 @@ def plot_monthly_box(
     fig.suptitle("")
 
     # Set the labels
+    ax.set_xlabel("Month")
+    ax.set_xticklabels(
+        [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+        ]
+    )
     ax.set_ylabel("Energy (kWh)")
     ax.set_title("Demand distribution by month", fontsize="large", loc="left")
     return fig, ax
@@ -85,6 +105,8 @@ def plot_weekly_box(
     fig.suptitle("")
 
     # Set the labels
+    ax.set_xlabel("Day of the week")
+    ax.set_xticklabels(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
     ax.set_ylabel("Energy (kWh)")
     ax.set_title("Demand distribution by day of week", loc="left", fontsize="large")
     return fig, ax
@@ -121,6 +143,8 @@ def plot_daily_box(
     fig.suptitle("")
 
     # Set the labels
+    ax.set_xlabel("Hour of the day")
+    ax.set_xticklabels([f"{time(hour=h):%H:%M}" for h in range(24)], rotation=90)
     ax.set_ylabel("Energy (kWh)")
     ax.set_title("Demand distribution by hour", loc="left", fontsize="large")
     return fig, ax
@@ -134,14 +158,13 @@ def plot_histogram(
     """Plot a histogram of demand data.
 
     Args:
-            data: Demand data.
-            figsize: Figure size.
-            n_bins: Number of bins for the histogram.
+        data: Demand data.
+        figsize: Figure size.
+        n_bins: Number of bins for the histogram.
 
-        Returns:
-            fig: Figure object.
-            ax: Axes object.
-
+    Returns:
+        fig: Figure object.
+        ax: Axes object.
     """
     # define the energy intervals to use for the histogram
     bins = np.linspace(0, data.y.max(), n_bins + 1)
@@ -198,7 +221,7 @@ def plot_heatmap(
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     ax.set_title("Demand heatmap", loc="left", fontsize="large")
 
-    sns.heatmap(data_hm, ax=ax, cbar_kws={"label": "Energy (kWh)"}, **kwargs)
+    sns.heatmap(data_hm, ax=ax, cmap="YlGnBu_r", cbar_kws={"label": "Energy (kWh)"}, **kwargs)
     return fig, ax
 
 
@@ -284,7 +307,7 @@ def plot_data_quality(data: pd.DataFrame, figsize: tuple[float, float] = (12, 5)
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     ax.set_title("Data quality of demand data", loc="left", fontsize="large")
 
-    cmap = plt.get_cmap("Reds", 4)
+    cmap = plt.get_cmap("YlGnBu_r", 4)
     sns.heatmap(
         data_hm,
         ax=ax,
@@ -314,6 +337,10 @@ def plot_acf(
         fig: Figure object.
         ax: Axes object.
     """
+    if data["y"].isna().any():
+        msg = "The data contains missing values. Make sure to handle them before plotting the ACF."
+        raise ValueError(msg)
+
     fig, ax = plt.subplots(1, 1, figsize=figsize)
 
     periods = periods_in_duration(data.index, duration=lags)
@@ -356,6 +383,10 @@ def plot_pacf(
         fig: Figure object.
         ax: Axes object.
     """
+    if data["y"].isna().any():
+        msg = "The data contains missing values. Make sure to handle them before plotting the ACF."
+        raise ValueError(msg)
+
     fig, ax = plt.subplots(1, 1, figsize=figsize)
 
     periods = periods_in_duration(data.index, duration=lags)

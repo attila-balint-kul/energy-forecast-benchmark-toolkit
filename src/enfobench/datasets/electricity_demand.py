@@ -163,4 +163,6 @@ class ElectricityDemandDataset(DatasetBase):
 
         demand = self.demand_subset.get_by_unique_id(unique_id)
         weather = self.weather_subset.get_by_location_id(location_id)
+        # Filter weather data to match the period of the demand data
+        weather = weather.loc[demand.index[0] - pd.Timedelta("7 days") : demand.index[-1] + pd.Timedelta("7 days")]
         return demand, weather, metadata

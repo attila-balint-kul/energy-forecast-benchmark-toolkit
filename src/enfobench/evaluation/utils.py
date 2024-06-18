@@ -22,6 +22,15 @@ def steps_in_horizon(horizon: pd.Timedelta, freq: str) -> int:
 
 
 def periods_in_duration(target: pd.DatetimeIndex, duration: timedelta | pd.Timedelta | str) -> int:
+    """Return the number of periods in a given duration.
+
+    Args:
+        target: The target variable.
+        duration: The duration of the season in a timedelta format.
+
+    Returns:
+        The period count.
+    """
     if isinstance(duration, timedelta):
         duration = pd.Timedelta(duration)
     elif isinstance(duration, str):
@@ -41,7 +50,7 @@ def periods_in_duration(target: pd.DatetimeIndex, duration: timedelta | pd.Timed
 
 
 def create_forecast_index(history: pd.DataFrame, horizon: int) -> pd.DatetimeIndex:
-    """Create time index for a forecast horizon.
+    """Creates a DatetimeIndex for a forecast horizon.
 
     Args:
         history: The history of the time series.
