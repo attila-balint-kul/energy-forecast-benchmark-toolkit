@@ -1,4 +1,4 @@
-FROM attilabalint/enfobench-models:base-sktime-0.26.1
+FROM attilabalint/enfobench-models:base-sktime-0.30.1
 
 WORKDIR /usr/local/app
 
