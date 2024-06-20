@@ -77,8 +77,8 @@ class DartsLightGBMModel:
 
 
 # Load parameters
-seasonality = os.getenv("ENFOBENCH_MODEL_SEASONALITY")
-model_type = os.getenv("ENFOBENCH_MODEL_TYPE")
+seasonality = os.getenv("ENFOBENCH_MODEL_SEASONALITY", "1D")
+model_type = os.getenv("ENFOBENCH_MODEL_TYPE", "Recursive")
 
 # Instantiate your model
 model = DartsLightGBMModel(seasonality=seasonality, model_type=model_type)

@@ -52,7 +52,7 @@ class DartsNaiveMovingAverageModel:
 
 
 # Load parameters
-history = os.getenv("ENFOBENCH_MODEL_HISTORY")
+history = os.getenv("ENFOBENCH_MODEL_HISTORY", "1D")
 
 # Instantiate your model
 model = DartsNaiveMovingAverageModel(history)

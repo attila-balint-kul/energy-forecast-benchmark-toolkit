@@ -1,4 +1,4 @@
-FROM attilabalint/enfobench-models:base-u8darts-0.27.2
+FROM attilabalint/enfobench-models:base-u8darts-0.30.0
 
 WORKDIR /usr/local/app
 
