@@ -51,7 +51,7 @@ class SeasonalNaiveModel:
 
 
 # Load parameters
-seasonality = os.getenv("ENFOBENCH_MODEL_SEASONALITY")
+seasonality = os.getenv("ENFOBENCH_MODEL_SEASONALITY", "1D")
 
 # Instantiate your model
 model = SeasonalNaiveModel(seasonality)

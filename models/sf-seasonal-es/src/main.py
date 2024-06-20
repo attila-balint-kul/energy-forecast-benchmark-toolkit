@@ -66,8 +66,8 @@ class SeasonalExponentialSmoothingModel:
 
 
 # Load parameters
-seasonality = os.getenv("ENFOBENCH_MODEL_SEASONALITY")
-alpha = float(os.getenv("ENFOBENCH_MODEL_ALPHA"))
+seasonality = os.getenv("ENFOBENCH_MODEL_SEASONALITY", "1D")
+alpha = float(os.getenv("ENFOBENCH_MODEL_ALPHA", "0.5"))
 
 # Instantiate your model
 model = SeasonalExponentialSmoothingModel(seasonality=seasonality, alpha=alpha)

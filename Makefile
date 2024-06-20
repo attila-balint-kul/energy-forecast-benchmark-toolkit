@@ -129,13 +129,13 @@ download-salesforce-moirai: models/salesforce-moirai/models/moirai-1.0-R-small \
 
 DOCKER_HUB_REPOSITORY := $(DOCKER_HUB_REPOSITORY)
 ENFOBENCH_VERSION := $(shell hatch version)
-MODEL_NAME := sf-naive
-IMAGE_TAG := $(ENFOBENCH_VERSION)-$(MODEL_NAME)
+MODEL := sf-naive
+IMAGE_TAG := $(ENFOBENCH_VERSION)-$(MODEL)
 DEFAULT_PORT := 3000
 
-DARTS_VERSION := 0.27.2
-SKTIME_VERSION := 0.26.1
-STATSFORECAST_VERSION := 1.5.0
+DARTS_VERSION := 0.30.0
+SKTIME_VERSION := 0.30.1
+STATSFORECAST_VERSION := 1.7.5
 CHRONOS_VERSION := 1.2.0
 
 
@@ -143,28 +143,33 @@ CHRONOS_VERSION := 1.2.0
 ## Build base image for darts
 base-image-darts:
 	docker build --build-arg DARTS_VERSION=$(DARTS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION) ./docker/base/darts
+	docker push $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION)
 
 
 .PHONY: base-image-sktime
 ## Build base image for sktime
 base-image-sktime:
 	docker build --build-arg SKTIME_VERSION=$(SKTIME_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION) ./docker/base/sktime
+	docker push $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION)
 
 
 .PHONY: base-image-statsforecast
 ## Build base image for statsforecast
 base-image-statsforecast:
 	docker build --build-arg STATSFORECAST_VERSION=$(STATSFORECAST_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION) ./docker/base/statsforecast
+	docker push $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION)
 
 
 .PHONY: base-image-amazon-chronos
 base-image-amazon-chronos:
 	docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION) ./docker/base/amazon-chronos
+	docker push $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION)
 
 
 .PHONY: base-image-salesforce-moirai
 base-image-salesforce-moirai:
 	docker build -t $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai ./docker/base/salesforce-moirai
+	docker push $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai
 
 
 ## Build base images
@@ -175,43 +180,22 @@ base-images: base-image-darts \
 			 base-image-salesforce-moirai
 
 
-.PHONY: push-base-images
-## Push base images to Docker Hub
-push-base-images:
-	docker push $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION)
-	docker push $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION)
-	docker push $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION)
-	docker push $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION)
-	docker push $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai
-
-
-.PHONY: image
+.PHONY: build-image
 ## Build a model image
-image:
-	docker build -t $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG) ./models/$(MODEL_NAME)
+build-image:
+	docker build -t $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG) ./models/$(MODEL)
 
 
 .PHONY: push-image
 ## Push a model image to Docker Hub
-push-image: image
+push-image:
 	docker push $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG)
 
 
 .PHONY: run-image
 ## Run a model image
-run-image: image
+run-image:
 	docker run -it --rm -p $(DEFAULT_PORT):3000 $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG)
-
-
-MODELS = $(shell ls -d ./models/* | xargs -n 1 basename)
-## Make all model images
-images:
-	$(foreach var,$(MODELS), $(MAKE) image MODEL_NAME=$(var);)
-
-
-## Push images to Docker Hub
-push-images:
-	$(foreach var,$(MODELS), $(MAKE) push-image MODEL_NAME=$(var);)
 
 
 #################################################################################

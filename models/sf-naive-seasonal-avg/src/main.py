@@ -58,8 +58,8 @@ class SeasonalWindowAverageModel:
 
 
 # Load parameters
-seasonality = os.getenv("ENFOBENCH_MODEL_SEASONALITY")
-window_size = int(os.getenv("ENFOBENCH_MODEL_WINDOW_SIZE"))
+seasonality = os.getenv("ENFOBENCH_MODEL_SEASONALITY", "1D")
+window_size = int(os.getenv("ENFOBENCH_MODEL_WINDOW_SIZE", "28"))
 
 # Instantiate your model
 model = SeasonalWindowAverageModel(seasonality, window_size)

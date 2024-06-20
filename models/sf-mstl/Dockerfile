@@ -1,4 +1,4 @@
-FROM attilabalint/enfobench-models:base-statsforecast-1.5.0
+FROM attilabalint/enfobench-models:base-statsforecast-1.7.5
 
 WORKDIR /usr/local/app
 
