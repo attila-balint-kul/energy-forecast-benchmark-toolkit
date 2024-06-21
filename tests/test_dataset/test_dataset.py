@@ -17,8 +17,8 @@ def test_get_history(helpers, resolution):
     assert isinstance(history.index, pd.DatetimeIndex)
     assert "y" in history.columns
     assert len(history.columns) == 1
-    assert cutoff_date in history.index
-    assert (history.index <= cutoff_date).all()
+    assert cutoff_date not in history.index
+    assert (history.index < cutoff_date).all()
 
 
 @pytest.mark.parametrize("resolution", ["15T", "30T", "1H"])

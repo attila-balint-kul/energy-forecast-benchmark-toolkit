@@ -170,4 +170,5 @@ def test_create_forecast_index(helpers, freq, horizon):
     assert isinstance(index, pd.DatetimeIndex)
     assert index.freq == history.index.freq
     assert len(index) == horizon
-    assert (index > cutoff_date).all()
+    assert index[0] == cutoff_date
+    assert (index >= cutoff_date).all()

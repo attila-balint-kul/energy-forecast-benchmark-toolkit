@@ -149,7 +149,7 @@ class Dataset:
         """Returns the history of the target variable up to the cutoff date.
 
         The cutoff date is the timestamp when the forecast is made,
-        therefore it is included in the history.
+        therefore the cutoff_date is not included in the history.
 
         Args:
             cutoff_date: The cutoff date.
@@ -158,13 +158,14 @@ class Dataset:
             The history of the target variable up to the cutoff date.
         """
         self._check_cutoff_in_rage(cutoff_date)
-        return self._target[self._target.index <= cutoff_date]
+        return self._target[self._target.index < cutoff_date]
 
     def get_past_covariates(self, cutoff_date: pd.Timestamp) -> pd.DataFrame | None:
         """Returns the past covariates for the cutoff date.
 
-        The cutoff date is the timestamp when the forecast is made,
-        therefore it is included in the past covariates.
+        The cutoff date is the timestamp when the forecast is made.
+        As the covariates are weather parameters measured at the indicated timestamp,
+        the cutoff_date is included in the past covariates.
 
         Args:
             cutoff_date: The cutoff date.
@@ -181,8 +182,9 @@ class Dataset:
     def get_future_covariates(self, cutoff_date: pd.Timestamp) -> pd.DataFrame | None:
         """Returns the future covariates for the cutoff date.
 
-        The cutoff date is the timestamp when the forecast is made,
-        therefore it is not included in the future covariates.
+        The cutoff date is the timestamp when the forecast is made.
+        As the covariates are weather parameters measured at the indicated timestamp,
+        the cutoff_date is not included in the future covariates.
 
         Args:
             cutoff_date: The cutoff date.

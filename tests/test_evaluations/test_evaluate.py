@@ -26,15 +26,16 @@ def test_cross_validate_univariate_locally(helpers, model):
     assert "yhat" in forecasts.columns
 
     assert "timestamp" in forecasts.columns
-    assert (forecasts.timestamp > start_date).all()
-    assert forecasts.timestamp.iloc[-1] == end_date
+    assert (forecasts.timestamp >= start_date).all()
+    assert forecasts.timestamp.iloc[0] == start_date
 
     assert "cutoff_date" in forecasts.columns
     assert (start_date.time() == forecasts.cutoff_date.dt.time).all()
 
     for cutoff_date, forecast in forecasts.groupby("cutoff_date"):
         assert len(forecast) == 38 * 2  # 38 hours with half-hour series
-        assert (forecast.timestamp > cutoff_date).all()
+        assert forecast.timestamp.iloc[0] == cutoff_date
+        assert (forecast.timestamp >= cutoff_date).all()
 
     assert list(forecasts.cutoff_date.unique()) == list(
         pd.date_range(start="2020-02-01 10:00:00", end="2020-03-30 10:00:00", freq="1D", inclusive="both")
