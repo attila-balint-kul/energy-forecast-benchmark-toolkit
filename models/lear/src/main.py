@@ -48,8 +48,8 @@ class LEARModel:
             merged_df = pd.concat(
                 [merged_df, future_covariates.drop(columns=['cutoff_date'])], axis=0  # don't need the cutoff dates
             )
-        
-        calibration_window = (hourly_forecast_index[0].date() - history.index.min()).days
+
+        calibration_window = (pd.Timestamp(hourly_forecast_index[0].date()) - history.index.min()).days
         if calibration_window < 473:
             Feat_selection = False
 
