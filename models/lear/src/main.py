@@ -11,7 +11,7 @@ class LEARModel:
         return ModelInfo(
             name="LEARModel",
             authors=[AuthorInfo(name="Margarida Mascarenhas", email="margarida.mascarenhas@kuleuven.be")],
-            type=ForecasterType.quantile,
+            type=ForecasterType.point,
             params={},
         )
 
@@ -22,51 +22,50 @@ class LEARModel:
         past_covariates: pd.DataFrame | None = None,
         future_covariates: pd.DataFrame | None = None,
         metadata: dict | None = None,
-        level: list[int] | None = None,
         **kwargs,
     ) -> pd.DataFrame:
+        # Create index for prediction
+        original_forecast_index = create_forecast_index(history, horizon)
+        hourly_forecast_index = pd.date_range(
+            start=original_forecast_index[0],
+            end=original_forecast_index[-1]
+            + pd.Timedelta(original_forecast_index.freq),  # Make it one step longer for interpolation
+            freq='1h',
+        )
+        steps = len(hourly_forecast_index)
 
+        # Resample the history to hourly frequency
+        resampled_history = history.resample('1h').mean()
+        if resampled_history.isna().any().any():
+            resampled_history.interpolate(method='linear', inplace=True)
 
-        history = history.resample('1h').mean()
+        # Merge the history with the weather data
+        merged_df = pd.merge(resampled_history, past_covariates, left_index=True, right_index=True, how='outer')
 
-        if history.isna().any().any():
-            history.interpolate(method='linear', inplace=True)
+        # Merge the future covariates
+        if future_covariates is not None:
+            merged_df = pd.concat(
+                [merged_df, future_covariates.drop(columns=['cutoff_date'])], axis=0  # don't need the cutoff dates
+            )
 
-        steps=len(future_covariates)
-        #merged_df = pd.merge(history, past_covariates, on='timestamp')
-        merged_df = pd.merge(history, past_covariates, left_index=True, right_index=True, how='outer')
+        model = LEAR(calibration_window=400)  # 500 days of calibration window
 
-        future_covariates_modified = future_covariates.iloc[:, 1:].copy() if future_covariates is not None else pd.DataFrame()
-        merged_df = pd.concat([merged_df, future_covariates_modified], axis=0)
-      
-        model = LEAR(calibration_window=500)
-
-        next_day_date = future_covariates['cutoff_date'][0] #history.index[-steps]
-   
         # Use the recalibrate_and_forecast_next_day method of LEAR
         y_pred = model.predict_with_horizon(
-            df=merged_df,
-            initial_date=next_day_date,
-            forecast_horizon_steps=steps
+            df=merged_df, initial_date=pd.Timestamp(hourly_forecast_index[0].date()), forecast_horizon_steps=steps
         )
 
-        hourly_index = pd.date_range(start=next_day_date, periods=steps, freq='1h')
-
         # Create the DataFrame
-        forecast = pd.DataFrame({'date': hourly_index, 'yhat': y_pred}).set_index('date')
+        original_freq = metadata['freq']
+        forecast = (
+            pd.DataFrame({'timestamp': hourly_forecast_index, 'yhat': y_pred})
+            .set_index('timestamp')
+            .reindex(original_freq)
+            .interpolate(method="linear")
+            .loc[original_forecast_index]
+        )
+        return forecast
 
-        freq_real=metadata['freq']
-                        
-        if not any(char.isdigit() for char in freq_real):
-            freq_real = '1' + freq_real
-        step_timedelta = pd.Timedelta(freq_real)
-        steps_to_add = int((1 / (step_timedelta.total_seconds() / 3600)) - 1)
-        last_timestamp = forecast.index[-1]
-
-        new_index = pd.date_range(start=forecast.index[0], end=last_timestamp + steps_to_add * step_timedelta, freq=freq_real)
-        prediction = forecast.reindex(new_index).interpolate(method='linear')
-
-        return prediction
 
 # Instantiate your model
 model = LEARModel()
@@ -76,4 +75,6 @@ app = server_factory(model)
 
 # Run the server if this script is the main one being executed
 if __name__ == "__main__":
-    app.run()
+    import uvicorn
+
+    uvicorn.run(app, port=3000)
