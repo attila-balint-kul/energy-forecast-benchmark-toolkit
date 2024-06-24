@@ -13,7 +13,7 @@ import os
 import holidays
 import joblib
 
-from sklearn.linear_model import LassoLarsIC, Lasso
+from sklearn.linear_model import LassoLarsIC, Lasso, LassoCV
 from epftoolbox.data import scaling
 from epftoolbox.data import read_data
 from epftoolbox.evaluation import MAE, sMAPE
@@ -40,7 +40,7 @@ class LEAR(object):
 
     # Ignore convergence warnings from scikit-learn LASSO module
     @ignore_warnings(category=ConvergenceWarning)
-    def recalibrate(self, Xtrain, Ytrain):
+    def recalibrate(self, Xtrain, Ytrain, Feat_selection):
         """Function to recalibrate the LEAR model.
 
         It uses a training (Xtrain, Ytrain) pair for recalibration
@@ -70,12 +70,16 @@ class LEAR(object):
         Xtrain[:, :-8] = Xtrain_no_dummies
         self.models = {}
         for h in range(24):
-            # Estimating lambda hyperparameter using LARS
-            param_model = LassoLarsIC(criterion='aic', max_iter=2500)
-            param = param_model.fit(Xtrain, Ytrain[:, h]).alpha_
 
-            # Re-calibrating LEAR using standard LASSO estimation technique
-            model = Lasso(max_iter=2500, alpha=param)
+            # Estimating lambda hyperparameter using LARS
+            if Feat_selection:
+                param_model = LassoLarsIC(criterion='aic', max_iter=2500)
+                param = param_model.fit(Xtrain, Ytrain[:, h]).alpha_
+                # Re-calibrating LEAR using standard LASSO estimation technique
+                model = Lasso(max_iter=2500, alpha=param)
+            else:
+                model = LassoCV(cv=5, max_iter=2500) 
+
             model.fit(Xtrain, Ytrain[:, h])
 
             self.models[h] = model
@@ -124,7 +128,7 @@ class LEAR(object):
         except Exception as e:
             print(f"Failed to save model: {e}")
 
-    def recalibrate_predict(self, Xtrain, Ytrain, Xtest, next_day_date):
+    def recalibrate_predict(self, Xtrain, Ytrain, Xtest, next_day_date, Feat_selection):
         """Function that first recalibrates the LEAR model and then makes a prediction.
 
         The function receives the training dataset, and trains the LEAR model. Then, using
@@ -145,7 +149,7 @@ class LEAR(object):
             An array containing the predictions in the test dataset.
         """
 
-        self.recalibrate(Xtrain=Xtrain, Ytrain=Ytrain)
+        self.recalibrate(Xtrain=Xtrain, Ytrain=Ytrain, Feat_selection=Feat_selection)
 
         Yp = self.predict(X=Xtest)
 
@@ -369,7 +373,7 @@ class LEAR(object):
 
         return filtered_df
 
-    def predict_with_horizon(self, df, initial_date, forecast_horizon_steps):
+    def predict_with_horizon(self, df, initial_date, forecast_horizon_steps, Feat_selection):
         df = self.select_features(df)
         n_exogeneous_inputs = len(df.columns) - 1
         columns = ['Target'] + ['Exogenous ' + str(n) for n in range(1, n_exogeneous_inputs + 1)]
@@ -385,7 +389,7 @@ class LEAR(object):
 
             Xtrain, Ytrain, Xtest = self._build_and_split_XYs(df_train, df_test, next_day_date)
 
-            Yp = self.recalibrate_predict(Xtrain=Xtrain, Ytrain=Ytrain, Xtest=Xtest, next_day_date=next_day_date)
+            Yp = self.recalibrate_predict(Xtrain=Xtrain, Ytrain=Ytrain, Xtest=Xtest, next_day_date=next_day_date, Feat_selection=Feat_selection)
 
             if i == 0:
                 start_hour = initial_date.hour

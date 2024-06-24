@@ -32,6 +32,7 @@ class LEARModel:
             + pd.Timedelta(original_forecast_index.freq),  # Make it one step longer for interpolation
             freq='1h',
         )
+        Feat_selection=True
         steps = len(hourly_forecast_index)
 
         # Resample the history to hourly frequency
@@ -47,12 +48,16 @@ class LEARModel:
             merged_df = pd.concat(
                 [merged_df, future_covariates.drop(columns=['cutoff_date'])], axis=0  # don't need the cutoff dates
             )
+        
+        calibration_window = (hourly_forecast_index[0].date() - history.index.min()).days
+        if calibration_window < 473:
+            Feat_selection = False
 
-        model = LEAR(calibration_window=400)  # 500 days of calibration window
+        model = LEAR(calibration_window=calibration_window)  # 500 days of calibration window
 
         # Use the recalibrate_and_forecast_next_day method of LEAR
         y_pred = model.predict_with_horizon(
-            df=merged_df, initial_date=pd.Timestamp(hourly_forecast_index[0].date()), forecast_horizon_steps=steps
+            df=merged_df, initial_date=pd.Timestamp(hourly_forecast_index[0].date()), forecast_horizon_steps=steps, Feat_selection=Feat_selection
         )
 
         # Create the DataFrame
