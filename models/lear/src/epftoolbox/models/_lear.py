@@ -70,7 +70,6 @@ class LEAR(object):
         Xtrain[:, :-8] = Xtrain_no_dummies
         self.models = {}
         for h in range(24):
-
             # Estimating lambda hyperparameter using LARS
             if Feat_selection:
                 param_model = LassoLarsIC(criterion='aic', max_iter=2500)
@@ -78,7 +77,7 @@ class LEAR(object):
                 # Re-calibrating LEAR using standard LASSO estimation technique
                 model = Lasso(max_iter=2500, alpha=param)
             else:
-                model = LassoCV(cv=5, max_iter=2500) 
+                model = LassoCV(cv=5, max_iter=2500)
 
             model.fit(Xtrain, Ytrain[:, h])
 
@@ -389,7 +388,9 @@ class LEAR(object):
 
             Xtrain, Ytrain, Xtest = self._build_and_split_XYs(df_train, df_test, next_day_date)
 
-            Yp = self.recalibrate_predict(Xtrain=Xtrain, Ytrain=Ytrain, Xtest=Xtest, next_day_date=next_day_date, Feat_selection=Feat_selection)
+            Yp = self.recalibrate_predict(
+                Xtrain=Xtrain, Ytrain=Ytrain, Xtest=Xtest, next_day_date=next_day_date, Feat_selection=Feat_selection
+            )
 
             if i == 0:
                 start_hour = initial_date.hour
