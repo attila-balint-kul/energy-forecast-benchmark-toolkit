@@ -361,11 +361,11 @@ class LEAR(object):
     def select_features(self, df):
         important_features = [
             'y',
-            'soil_temperature_7_to_28cm',
-            'dew_point_2m',
-            'soil_temperature_0_to_7cm',
-            'soil_moisture_7_to_28cm',
-            'apparent_temperature',
+            'wind_speed_10m', 
+            'wind_direction_10m', 
+            'cloud_cover', 
+            'relative_humidity_2m', 
+            'temperature_2m'
         ]
 
         filtered_df = df[important_features]
