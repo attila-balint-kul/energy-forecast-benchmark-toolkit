@@ -4,6 +4,7 @@ from http import HTTPStatus
 
 import pandas as pd
 import requests
+from requests import HTTPError
 
 from enfobench.core import ModelInfo
 from enfobench.evaluation.server import EnvironmentInfo
@@ -58,7 +59,10 @@ class ForecastClient:
             params=params,
             files=files,
         )
-        if response.status_code != HTTPStatus.OK:
+        if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
+            response = json.loads(response.text)
+            raise HTTPError(response.get("error", "Internal Server Error"), response=response)
+        elif response.status_code != HTTPStatus.OK:
             response.raise_for_status()
 
         df = pd.DataFrame.from_records(response.json()["forecast"])

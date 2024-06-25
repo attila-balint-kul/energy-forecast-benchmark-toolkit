@@ -2,14 +2,17 @@ import io
 import json
 import sys
 from typing import Annotated, Any
+import traceback as tb
 
 import pandas as pd
 import pkg_resources
-from fastapi import FastAPI, File, Query
+from fastapi import File, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.responses import RedirectResponse
+from fastapi import FastAPI
+from starlette.exceptions import HTTPException
 
 from enfobench.core import ForecasterType, Model
 
@@ -54,6 +57,13 @@ def server_factory(model: Model) -> FastAPI:
         packages={package.key: package.version for package in pkg_resources.working_set},
     )
 
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request, exc):
+        return JSONResponse({
+            "error": exc.detail,
+            "status_code": exc.status_code,
+        }, status_code=exc.status_code)
+
     @app.get("/", include_in_schema=False)
     async def index():
         return RedirectResponse(url="/docs")
@@ -82,14 +92,21 @@ def server_factory(model: Model) -> FastAPI:
         future_covariates_df = pd.read_parquet(io.BytesIO(future_covariates)) if future_covariates is not None else None
         metadata = json.load(io.BytesIO(metadata)) if metadata is not None else None
 
-        forecast_df = model.forecast(
-            horizon=horizon,
-            history=history_df,
-            past_covariates=past_covariates_df,
-            future_covariates=future_covariates_df,
-            metadata=metadata,
-            level=level,
-        )
+        try:
+            forecast_df = model.forecast(
+                horizon=horizon,
+                history=history_df,
+                past_covariates=past_covariates_df,
+                future_covariates=future_covariates_df,
+                metadata=metadata,
+                level=level,
+            )
+        except Exception as e:
+            with io.StringIO() as file:
+                tb.print_exception(e, file=file)
+                detail = file.getvalue()
+            raise HTTPException(500, detail=detail)
+
         forecast_df.fillna(0, inplace=True)
         forecast_df.rename_axis("timestamp", inplace=True)
         forecast_df.reset_index(inplace=True)
