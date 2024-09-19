@@ -15,7 +15,7 @@ venv/bin/python:
 	( \
 		$(PYTHON_INTERPRETER) -m venv ./venv; \
 		source ./venv/bin/activate; \
-		pip install --upgrade pip; \
+		uv pip install --upgrade pip; \
 	)
 
 .PHONY: install
@@ -23,7 +23,7 @@ venv/bin/python:
 install: venv/bin/python
 	(\
 		source ./venv/bin/activate; \
-		pip install -e .; \
+		uv pip install -e .; \
     )
 
 .PHONY: clean

@@ -89,7 +89,7 @@ test = "pytest {args:tests}"
 cov = "pytest --cov=enfobench --cov-report=term-missing {args:tests}"
 
 [[tool.hatch.envs.all.matrix]]
-python = ["3.10", "3.11"]
+python = ["3.10", "3.11", "3.12"]
 
 [tool.hatch.envs.lint]
 detached = true
