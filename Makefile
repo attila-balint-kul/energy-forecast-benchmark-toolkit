@@ -6,6 +6,8 @@ PROJECT_NAME = energy-forecast-benchmark-toolkit
 PACKAGE_NAME = enfobench
 PYTHON_INTERPRETER ?= python3
 
+PLATFORM := $(shell uname -s | grep -q "Darwin" && uname -m | grep -q "arm64" && echo "--platform linux/amd64")
+
 #################################################################################
 # COMMANDS                                                                      #
 #################################################################################
@@ -127,7 +129,7 @@ download-salesforce-moirai: models/salesforce-moirai/models/moirai-1.0-R-small \
 # MODEL RULES                                                                   #
 #################################################################################
 
-DOCKER_HUB_REPOSITORY := $(DOCKER_HUB_REPOSITORY)
+DOCKER_HUB_REPOSITORY ?= attilabalint/enfobench-models
 ENFOBENCH_VERSION := $(shell hatch version)
 MODEL := sf-naive
 IMAGE_TAG := $(ENFOBENCH_VERSION)-$(MODEL)
@@ -142,33 +144,33 @@ CHRONOS_VERSION := 1.2.0
 .PHONY: base-image-darts
 ## Build base image for darts
 base-image-darts:
-	docker build --build-arg DARTS_VERSION=$(DARTS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION) ./docker/base/darts
+	docker build $(PLATFORM) --build-arg DARTS_VERSION=$(DARTS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION) ./docker/base/darts
 	docker push $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION)
 
 
 .PHONY: base-image-sktime
 ## Build base image for sktime
 base-image-sktime:
-	docker build --build-arg SKTIME_VERSION=$(SKTIME_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION) ./docker/base/sktime
+	docker build $(PLATFORM) --build-arg SKTIME_VERSION=$(SKTIME_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION) ./docker/base/sktime
 	docker push $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION)
 
 
 .PHONY: base-image-statsforecast
 ## Build base image for statsforecast
 base-image-statsforecast:
-	docker build --build-arg STATSFORECAST_VERSION=$(STATSFORECAST_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION) ./docker/base/statsforecast
+	docker build $(PLATFORM) --build-arg STATSFORECAST_VERSION=$(STATSFORECAST_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION) ./docker/base/statsforecast
 	docker push $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION)
 
 
 .PHONY: base-image-amazon-chronos
 base-image-amazon-chronos:
-	docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION) ./docker/base/amazon-chronos
+	docker build $(PLATFORM) --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION) ./docker/base/amazon-chronos
 	docker push $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION)
 
 
 .PHONY: base-image-salesforce-moirai
 base-image-salesforce-moirai:
-	docker build -t $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai ./docker/base/salesforce-moirai
+	docker build $(PLATFORM) -t $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai ./docker/base/salesforce-moirai
 	docker push $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai
 
 
@@ -183,7 +185,7 @@ base-images: base-image-darts \
 .PHONY: build-image
 ## Build a model image
 build-image:
-	docker build -t $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG) ./models/$(MODEL)
+	docker build $(PLATFORM) -t $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG) ./models/$(MODEL)
 
 
 .PHONY: push-image
@@ -195,7 +197,7 @@ push-image:
 .PHONY: run-image
 ## Run a model image
 run-image:
-	docker run -it --rm -p $(DEFAULT_PORT):3000 $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG)
+	docker run $(PLATFORM) -it --rm -p $(DEFAULT_PORT):3000 $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG)
 
 
 #################################################################################
