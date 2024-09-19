@@ -64,6 +64,7 @@ class LEARModel:
         )
 
         # Create the prediction DataFrame by resampling the forecast to the original frequency
+        original_freq = metadata['freq']
         new_index = pd.date_range(start=hourly_forecast_index.min(), end=hourly_forecast_index.max(), freq=original_freq)
         forecast = (
             pd.DataFrame({'timestamp': hourly_forecast_index, 'yhat': y_pred})
