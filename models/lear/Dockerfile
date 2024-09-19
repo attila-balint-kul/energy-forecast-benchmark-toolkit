@@ -1,11 +1,11 @@
-FROM attilabalint/enfobench-models:base-u8darts-0.30.0
-
-WORKDIR /usr/local/app
+FROM python:3.11-slim-bookworm
 
 COPY ./requirements.txt /usr/local/app/requirements.txt
 RUN pip install --no-cache-dir -r /usr/local/app/requirements.txt
 
 COPY ./src /usr/local/app/src
 
+WORKDIR /usr/local/app/src
+
 EXPOSE 3000
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "3000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000"]

@@ -1,8 +1,8 @@
 import pandas as pd
+
 from enfobench import AuthorInfo, ForecasterType, ModelInfo
 from enfobench.evaluation.server import server_factory
 from enfobench.evaluation.utils import create_forecast_index
-from datetime import datetime, timedelta
 from epftoolbox.models import LEAR
 
 
@@ -29,7 +29,7 @@ class LEARModel:
         hourly_forecast_index = pd.date_range(
             start=original_forecast_index[0],
             end=original_forecast_index[-1]
-            + pd.Timedelta(original_forecast_index.freq),  # Make it one step longer for interpolation
+                + pd.Timedelta(original_forecast_index.freq),  # Make it one step longer for interpolation
             freq='1h',
         )
         Feat_selection = True
