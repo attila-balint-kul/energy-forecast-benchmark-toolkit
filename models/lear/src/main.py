@@ -49,7 +49,7 @@ class LEARModel:
                 [merged_df, future_covariates.drop(columns=['cutoff_date'])], axis=0  # don't need the cutoff dates
             )
 
-        calibration_window = (hourly_forecast_index[0].date() - history.first_valid_index().date()).days
+        calibration_window = (hourly_forecast_index[0].date() - pd.Timedelta(weeks=2) - history.first_valid_index().date()).days
         if calibration_window < 473:
             Feat_selection = False
 
@@ -64,11 +64,11 @@ class LEARModel:
         )
 
         # Create the prediction DataFrame by resampling the forecast to the original frequency
-        original_freq = metadata['freq']
+        new_index = pd.date_range(start=hourly_forecast_index.min(), end=hourly_forecast_index.max(), freq=original_freq)
         forecast = (
             pd.DataFrame({'timestamp': hourly_forecast_index, 'yhat': y_pred})
             .set_index('timestamp')
-            .reindex(original_freq)
+            .reindex(new_index)
             .interpolate(method="linear")
             .loc[original_forecast_index]
         )
