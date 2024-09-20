@@ -28,9 +28,8 @@ class LEARModel:
         original_forecast_index = create_forecast_index(history, horizon)
         hourly_forecast_index = pd.date_range(
             start=original_forecast_index[0],
-            end=original_forecast_index[-1]
-                + pd.Timedelta(original_forecast_index.freq),  # Make it one step longer for interpolation
-            freq='1h',
+            end=original_forecast_index[-1],
+            freq='1h'
         )
         Feat_selection = True
         steps = len(hourly_forecast_index)
@@ -49,23 +48,25 @@ class LEARModel:
                 [merged_df, future_covariates.drop(columns=['cutoff_date'])], axis=0  # don't need the cutoff dates
             )
 
-        calibration_window = (hourly_forecast_index[0].date() - pd.Timedelta(weeks=2) - history.first_valid_index().date()).days
+        calibration_window = (hourly_forecast_index[0].date()-pd.Timedelta(weeks=2) - history.first_valid_index().date()).days
         if calibration_window < 473:
             Feat_selection = False
 
+
         model = LEAR(calibration_window=calibration_window)
 
+    
         # Use the recalibrate_and_forecast_next_day method of LEAR
         y_pred = model.predict_with_horizon(
             df=merged_df,
-            initial_date=pd.Timestamp(hourly_forecast_index[0].date()),
+            hourly_forecast_index=hourly_forecast_index,
             forecast_horizon_steps=steps,
             Feat_selection=Feat_selection,
         )
 
         # Create the prediction DataFrame by resampling the forecast to the original frequency
         original_freq = metadata['freq']
-        new_index = pd.date_range(start=hourly_forecast_index.min(), end=hourly_forecast_index.max(), freq=original_freq)
+        new_index = pd.date_range(start=hourly_forecast_index.min(), end=hourly_forecast_index.max()  + pd.Timedelta(hours=1) - pd.Timedelta(original_freq), freq=original_freq)
         forecast = (
             pd.DataFrame({'timestamp': hourly_forecast_index, 'yhat': y_pred})
             .set_index('timestamp')
