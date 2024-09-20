@@ -56,6 +56,7 @@ def evaluate_metrics(
     metrics: dict[str, Callable],
     *,
     groupby: str | None = None,
+    verbose: bool = True,
 ) -> pd.DataFrame:
     """Evaluate multiple metrics on forecasts.
 
@@ -63,6 +64,7 @@ def evaluate_metrics(
         forecasts: Forecasts to evaluate.
         metrics: Metric to evaluate.
         groupby: Column to group forecasts by. (Optional, if not provided, forecasts will not be grouped.)
+        verbose: Whether to display a progress bar. (Default: True)
 
     Returns:
         Metric values for each cutoff with their weight.
@@ -74,8 +76,9 @@ def evaluate_metrics(
         msg = f"Groupby column {groupby} not found in forecasts."
         raise ValueError(msg)
 
+    iterator = tqdm(forecasts.groupby(groupby)) if verbose else forecasts.groupby(groupby)
     metrics_df = pd.concat(
-        [_evaluate_group(group_df, metrics, value) for value, group_df in tqdm(forecasts.groupby(groupby))]
+        [_evaluate_group(group_df, metrics, value) for value, group_df in iterator]
     )
 
     metrics_df.rename_axis(groupby, inplace=True)
@@ -92,6 +95,7 @@ def cross_validate(
     horizon: pd.Timedelta,
     step: pd.Timedelta,
     level: list[int] | None = None,
+    verbose: bool = True,
 ) -> pd.DataFrame:
     """Cross-validate a model.
 
@@ -103,6 +107,7 @@ def cross_validate(
         horizon: Forecast horizon.
         step: Step size between cutoff dates.
         level: Prediction intervals to compute. (Optional, if not provided, simple point forecasts will be computed.)
+        verbose: Whether to display a progress bar. (Default: True)
     """
     if start_date <= dataset.target_available_since:
         msg = f"start_date={start_date} must be after the start of the dataset={dataset.target_available_since}"
@@ -128,7 +133,7 @@ def cross_validate(
     horizon_length = steps_in_horizon(horizon, dataset.target_freq)
 
     forecasts = []
-    for cutoff_date in tqdm(cutoff_dates):
+    for cutoff_date in tqdm(cutoff_dates) if verbose else cutoff_dates:
         history = dataset.get_history(cutoff_date)
         past_covariates = dataset.get_past_covariates(cutoff_date)
         future_covariates = dataset.get_future_covariates(cutoff_date)
