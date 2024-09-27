@@ -1,3 +1,11 @@
+"""
+Classes and functions to implement the LEAR model for electricity price forecasting
+"""
+
+# Author: Jesus Lago
+
+# License: AGPL-3.0 License
+
 import numpy as np
 import pandas as pd
 from statsmodels.robust import mad
@@ -30,7 +38,6 @@ class LEAR(object):
 
         # Calibration window in hours
         self.calibration_window = calibration_window
-        self.last_recalibration_date = None
 
     # Ignore convergence warnings from scikit-learn LASSO module
 
@@ -71,14 +78,13 @@ class LEAR(object):
                 param_model = LassoLarsIC(criterion='aic', max_iter=5000)
                 param = param_model.fit(Xtrain, Ytrain[:, h]).alpha_
                 # Re-calibrating LEAR using standard LASSO estimation technique
-                model = Lasso(max_iter=5000, alpha=param)
+                model = Lasso(max_iter=5000, alpha=param, tol=0.01)
             else:
                 model = LassoCV(cv=5, max_iter=5000) 
 
             model.fit(Xtrain, Ytrain[:, h])
 
             self.models[h] = model
-
 
     def predict(self, X):
         """Function that makes a prediction using some given inputs.
@@ -129,8 +135,8 @@ class LEAR(object):
             joblib.dump(model_data, f'{models_dir}/LEAR_CW{self.calibration_window}_{date_str}.joblib')
         except Exception as e:
             print(f"Failed to save model: {e}")
-        
-    def recalibrate_predict(self, Xtrain, Ytrain, Xtest, next_day_date, Feat_selection):
+         
+    def recalibrate_predict(self, Xtrain, Ytrain, Xtest, next_day_date, Feat_selection, train):
         """Function that first recalibrates the LEAR model and then makes a prediction.
 
         The function receives the training dataset, and trains the LEAR model. Then, using
@@ -150,15 +156,15 @@ class LEAR(object):
         numpy.array
             An array containing the predictions in the test dataset.
         """
-        if self.last_recalibration_date is None or next_day_date - self.last_recalibration_date >= pd.Timedelta(weeks=1):
-            self.last_recalibration_date = next_day_date
-            self.recalibrate(Xtrain=Xtrain, Ytrain=Ytrain,Feat_selection=Feat_selection)    
+        if train:
+            self.recalibrate(Xtrain=Xtrain, Ytrain=Ytrain,Feat_selection=Feat_selection)
+            train=False
 
         Yp = self.predict(X=Xtest)
 
         self.save_model(next_day_date)
 
-        return Yp
+        return Yp, train
 
     def _build_and_split_XYs(self, df_train, df_test=None, date_test=None):
         
@@ -317,49 +323,6 @@ class LEAR(object):
 
         return Xtrain, Ytrain, Xtest
 
-    def recalibrate_and_forecast_next_day(self, df, calibration_window, next_day_date):
-        """Easy-to-use interface for daily recalibration and forecasting of the LEAR model.
-        
-        The function receives a pandas dataframe and a date. Usually, the data should
-        correspond with the date of the next-day when using for daily recalibration.
-        
-        Parameters
-        ----------
-        df : pandas.DataFrame
-            Dataframe of historical data containing prices and *N* exogenous inputs. 
-            The index of the dataframe should be dates with hourly frequency. The columns 
-            should have the following names ``['Target', 'Exogenous 1', 'Exogenous 2', ...., 'Exogenous N']``.
-        
-        calibration_window : int
-            Calibration window (in days) for the LEAR model.
-        
-        next_day_date : datetime
-            Date of the day-ahead.
-        
-        Returns
-        -------
-        numpy.array
-            The prediction of day-ahead prices.
-        """
-
-        # We define the new training dataset and test datasets 
-        df_train = df.loc[:next_day_date - pd.Timedelta(hours=1)]
-        # Limiting the training dataset to the calibration window
-        df_train = df_train.iloc[-self.calibration_window * 24:]
-    
-        # We define the test dataset as the next day (they day of interest) plus the last two weeks
-        # in order to be able to build the necessary input features. 
-        df_test = df.loc[next_day_date - pd.Timedelta(weeks=2):, :]
-
-
-        # Generating X,Y pairs for predicting prices
-        Xtrain, Ytrain, Xtest, = self._build_and_split_XYs(
-            df_train=df_train, df_test=df_test, date_test=next_day_date)
-
-        # Recalibrating the LEAR model and extracting the prediction
-        Yp = self.recalibrate_predict(Xtrain=Xtrain, Ytrain=Ytrain, Xtest=Xtest, next_day_date=next_day_date)
-
-        return Yp
 
     def select_features(self, df):
         important_features = ['y','soil_temperature_7_to_28cm', 'dew_point_2m', 'soil_temperature_0_to_7cm', 'soil_moisture_7_to_28cm', 'apparent_temperature']
@@ -368,7 +331,7 @@ class LEAR(object):
 
         return filtered_df
 
-    def predict_with_horizon(self, df, hourly_forecast_index, forecast_horizon_steps, Feat_selection):
+    def predict_with_horizon(self, df, hourly_forecast_index, forecast_horizon_steps, Feat_selection, train):
 
         df=self.select_features(df)
         n_exogeneous_inputs = len(df.columns) - 1
@@ -386,7 +349,7 @@ class LEAR(object):
 
             Xtrain, Ytrain, Xtest = self._build_and_split_XYs(df_train, df_test, next_day_date)
                  
-            Yp = self.recalibrate_predict(Xtrain=Xtrain, Ytrain=Ytrain, Xtest=Xtest, next_day_date=next_day_date, Feat_selection=Feat_selection)
+            Yp, train = self.recalibrate_predict(Xtrain=Xtrain, Ytrain=Ytrain, Xtest=Xtest, next_day_date=next_day_date, Feat_selection=Feat_selection, train=train)
 
             if i==0:
                 start_hour = initial_date.hour
