@@ -1,19 +1,28 @@
 import pandas as pd
-
 from enfobench import AuthorInfo, ForecasterType, ModelInfo
 from enfobench.evaluation.server import server_factory
 from enfobench.evaluation.utils import create_forecast_index
+from datetime import datetime, timedelta
 from epftoolbox.models import LEAR
 
 
-class LEARModel:
+
+
+
+class PeriodicallyRecalibratedLearModel:
+
     def info(self) -> ModelInfo:
         return ModelInfo(
-            name="LEARModel",
+            name="PeriodicallyRecalibratedLearModel",
             authors=[AuthorInfo(name="Margarida Mascarenhas", email="margarida.mascarenhas@kuleuven.be")],
-            type=ForecasterType.point,
+            type=ForecasterType.quantile,
             params={},
         )
+
+    def __init__(self, recalibration_period: str):
+        self.recalibration_period = pd.Timedelta(recalibration_period)
+        self.last_recalibrated: pd.Timestamp = pd.Timestamp(0)  # Never recalibrated
+        self.model = None
 
     def forecast(
         self,
@@ -29,7 +38,7 @@ class LEARModel:
         hourly_forecast_index = pd.date_range(
             start=original_forecast_index[0],
             end=original_forecast_index[-1],
-            freq='1h'
+            freq='1h',
         )
         Feat_selection = True
         steps = len(hourly_forecast_index)
@@ -52,17 +61,23 @@ class LEARModel:
         if calibration_window < 473:
             Feat_selection = False
 
+        train=False
+        current_time = history.index[-1]# Last index of history for example
+        if current_time - self.last_recalibrated > self.recalibration_period:
+            self.model = LEAR(calibration_window=calibration_window)
+            train=True
+            self.last_recalibrated = current_time 
 
-        model = LEAR(calibration_window=calibration_window)
-
-    
-        # Use the recalibrate_and_forecast_next_day method of LEAR
-        y_pred = model.predict_with_horizon(
+        # Forecast using the model
+        y_pred = self.model.predict_with_horizon(
             df=merged_df,
             hourly_forecast_index=hourly_forecast_index,
             forecast_horizon_steps=steps,
             Feat_selection=Feat_selection,
+            train=train
         )
+
+        #model = LEAR(calibration_window=calibration_window)
 
         # Create the prediction DataFrame by resampling the forecast to the original frequency
         original_freq = metadata['freq']
@@ -76,15 +91,12 @@ class LEARModel:
         )
         return forecast
 
-
 # Instantiate your model
-model = LEARModel()
+model = PeriodicallyRecalibratedLearModel(recalibration_period= '7D')
 
 # Create a forecast server by passing in your model
 app = server_factory(model)
 
 # Run the server if this script is the main one being executed
 if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, port=3000)
+    app.run()
