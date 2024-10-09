@@ -1,0 +1,10 @@
+numpy>=1
+pandas>=1
+hyperopt>=0.2
+tensorflow==2.15
+scikit-learn>=0.22
+statsmodels>=0.11
+matplotlib>=3
+scipy>=1.4
+holidays
+enfobench
