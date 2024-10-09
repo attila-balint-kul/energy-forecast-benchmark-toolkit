@@ -5,10 +5,6 @@ from enfobench.evaluation.utils import create_forecast_index
 from datetime import datetime, timedelta
 from epftoolbox.models import LEAR
 
-
-
-
-
 class PeriodicallyRecalibratedLearModel:
 
     def info(self) -> ModelInfo:
@@ -48,9 +44,9 @@ class PeriodicallyRecalibratedLearModel:
         if resampled_history.isna().any().any():
             resampled_history.interpolate(method='linear', inplace=True)
 
-        # Merge the history with the weather data
+        common_columns = past_covariates.columns.intersection(future_covariates.columns)
+        past_covariates = past_covariates[common_columns]
         merged_df = pd.merge(resampled_history, past_covariates, left_index=True, right_index=True, how='outer')
-
         # Merge the future covariates
         if future_covariates is not None:
             merged_df = pd.concat(
@@ -58,7 +54,11 @@ class PeriodicallyRecalibratedLearModel:
             )
 
         calibration_window = (hourly_forecast_index[0].date()-pd.Timedelta(weeks=2) - history.first_valid_index().date()).days
-        if calibration_window < 473:
+        
+        n_exogenous_inputs = len(merged_df.columns) - 1
+        n_features = 96 + 8 + n_exogenous_inputs * 72
+
+        if calibration_window < n_features+1:
             Feat_selection = False
 
         train=False
@@ -81,7 +81,11 @@ class PeriodicallyRecalibratedLearModel:
 
         # Create the prediction DataFrame by resampling the forecast to the original frequency
         original_freq = metadata['freq']
-        new_index = pd.date_range(start=hourly_forecast_index.min(), end=hourly_forecast_index.max()  + pd.Timedelta(hours=1) - pd.Timedelta(original_freq), freq=original_freq)
+        new_index = pd.date_range(
+        start=hourly_forecast_index.min(),
+        end=hourly_forecast_index.max() + pd.Timedelta(hours=1) - pd.Timedelta(original_freq.replace('T', 'min')),
+        freq=original_freq.replace('T', 'min')
+        )
         forecast = (
             pd.DataFrame({'timestamp': hourly_forecast_index, 'yhat': y_pred})
             .set_index('timestamp')
