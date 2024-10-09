@@ -1,10 +1,3 @@
-"""
-Classes and functions to implement the LEAR model for electricity price forecasting
-"""
-
-# Author: Jesus Lago
-
-# License: AGPL-3.0 License
 
 import numpy as np
 import pandas as pd
@@ -13,7 +6,8 @@ import os
 import holidays
 import joblib
 
-from sklearn.linear_model import LassoLarsIC, Lasso, LassoCV
+from sklearn.linear_model import LassoLarsIC, Lasso, LassoCV, LassoLarsCV
+from sklearn.linear_model import RidgeCV
 from epftoolbox.data import scaling
 from epftoolbox.data import read_data
 from epftoolbox.evaluation import MAE, sMAPE
@@ -65,22 +59,22 @@ class LEAR(object):
         """
 
         # # Applying Invariant, aka asinh-median transformation to the prices
-        [Ytrain], self.scalerY = scaling([Ytrain], 'Invariant')
+        [Ytrain], self.scalerY = scaling([Ytrain], 'Norm')
 
         # # Rescaling all inputs except dummies (7 last features)
-        [Xtrain_no_dummies], self.scalerX = scaling([Xtrain[:, :-8]], 'Invariant')
+        [Xtrain_no_dummies], self.scalerX = scaling([Xtrain[:, :-8]], 'Norm')
         Xtrain[:, :-8] = Xtrain_no_dummies
         self.models = {}
         for h in range(24):
 
             # Estimating lambda hyperparameter using LARS
             if Feat_selection:
-                param_model = LassoLarsIC(criterion='aic', max_iter=10000)
+                param_model = LassoLarsIC(criterion='aic', max_iter=20000)
                 param = param_model.fit(Xtrain, Ytrain[:, h]).alpha_
                 # Re-calibrating LEAR using standard LASSO estimation technique
-                model = Lasso(max_iter=10000, alpha=param, tol=0.01)
+                model = Lasso(max_iter=20000, alpha=param)
             else:
-                model = LassoCV(cv=5, max_iter=10000) 
+                model = RidgeCV(alphas=[0.1, 1.0, 10.0], cv=5) #LassoCV(cv=5) 
 
             model.fit(Xtrain, Ytrain[:, h])
 
@@ -323,7 +317,6 @@ class LEAR(object):
 
         return Xtrain, Ytrain, Xtest
 
-
     def select_features(self, df):
         important_features = ['y','soil_temperature_7_to_28cm', 'dew_point_2m', 'soil_temperature_0_to_7cm', 'soil_moisture_7_to_28cm', 'apparent_temperature']
 
@@ -333,7 +326,7 @@ class LEAR(object):
 
     def predict_with_horizon(self, df, hourly_forecast_index, forecast_horizon_steps, Feat_selection, train):
 
-        df=self.select_features(df)
+        #df=self.select_features(df)
         n_exogeneous_inputs = len(df.columns) - 1
         columns = ['Target'] + ['Exogenous ' + str(n) for n in range(1, n_exogeneous_inputs + 1)]
         df.columns = columns
