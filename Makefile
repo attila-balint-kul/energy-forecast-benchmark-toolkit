@@ -95,42 +95,42 @@ publish-test: build
 #################################################################################
 
 
-models/amazon-chronos/models/chronos-t5-tiny:
-	git clone https://huggingface.co/amazon/chronos-t5-tiny ./models/amazon-chronos/models/chronos-t5-tiny
+models/amazon-chronos_t5/models/chronos-t5-tiny:
+	git clone https://huggingface.co/amazon/chronos-t5-tiny $@
 
-models/amazon-chronos/models/chronos-t5-mini:
-	git clone https://huggingface.co/amazon/chronos-t5-mini ./models/amazon-chronos/models/chronos-t5-mini
+models/amazon-chronos_t5/models/chronos-t5-mini:
+	git clone https://huggingface.co/amazon/chronos-t5-mini $@
 
-models/amazon-chronos/models/chronos-t5-small:
-	git clone https://huggingface.co/amazon/chronos-t5-small ./models/amazon-chronos/models/chronos-t5-small
+models/amazon-chronos_t5/models/chronos-t5-small:
+	git clone https://huggingface.co/amazon/chronos-t5-small $@
 
-models/amazon-chronos/models/chronos-t5-base:
-	git clone https://huggingface.co/amazon/chronos-t5-base ./models/amazon-chronos/models/chronos-t5-base
+models/amazon-chronos_t5/models/chronos-t5-base:
+	git clone https://huggingface.co/amazon/chronos-t5-base $@
 
-models/amazon-chronos/models/chronos-t5-large:
-	git clone https://huggingface.co/amazon/chronos-t5-large ./models/amazon-chronos/models/chronos-t5-large --progress
+models/amazon-chronos_t5/models/chronos-t5-large:
+	git clone https://huggingface.co/amazon/chronos-t5-large $@ --progress
 
-models/amazon-chronos/models/chronos-bolt-tiny:
-	git clone https://huggingface.co/amazon/chronos-bolt-tiny ./models/amazon-chronos/models/chronos-bolt-tiny
+models/amazon-chronos_bolt/models/chronos-bolt-tiny:
+	git clone https://huggingface.co/amazon/chronos-bolt-tiny $@
 
-models/amazon-chronos/models/chronos-bolt-mini:
-	git clone https://huggingface.co/amazon/chronos-bolt-mini ./models/amazon-chronos/models/chronos-bolt-mini
+models/amazon-chronos_bolt/models/chronos-bolt-mini:
+	git clone https://huggingface.co/amazon/chronos-bolt-mini $@
 
-models/amazon-chronos/models/chronos-bolt-small:
-	git clone https://huggingface.co/amazon/chronos-bolt-small ./models/amazon-chronos/models/chronos-bolt-small
+models/amazon-chronos_bolt/models/chronos-bolt-small:
+	git clone https://huggingface.co/amazon/chronos-bolt-small $@
 
-models/amazon-chronos/models/chronos-bolt-base:
-	git clone https://huggingface.co/amazon/chronos-bolt-base ./models/amazon-chronos/models/chronos-bolt-base --progress
+models/amazon-chronos_bolt/models/chronos-bolt-base:
+	git clone https://huggingface.co/amazon/chronos-bolt-base $@ --progress
 
-download-amazon-chronos: models/amazon-chronos/models/chronos-t5-tiny \
-						 models/amazon-chronos/models/chronos-t5-mini \
-						 models/amazon-chronos/models/chronos-t5-small \
-						 models/amazon-chronos/models/chronos-t5-base \
-						 models/amazon-chronos/models/chronos-t5-large \
-						 models/amazon-chronos/models/chronos-bolt-tiny \
-						 models/amazon-chronos/models/chronos-bolt-mini \
-						 models/amazon-chronos/models/chronos-bolt-small \
-						 models/amazon-chronos/models/chronos-bolt-base
+download-amazon-chronos: models/amazon-chronos_t5/models/chronos-t5-tiny \
+						 models/amazon-chronos_t5/models/chronos-t5-mini \
+						 models/amazon-chronos_t5/models/chronos-t5-small \
+						 models/amazon-chronos_t5/models/chronos-t5-base \
+						 models/amazon-chronos_t5/models/chronos-t5-large \
+						 models/amazon-chronos_bolt/models/chronos-bolt-tiny \
+						 models/amazon-chronos_bolt/models/chronos-bolt-mini \
+						 models/amazon-chronos_bolt/models/chronos-bolt-small \
+						 models/amazon-chronos_bolt/models/chronos-bolt-base
 
 
 models/salesforce-moirai/models/moirai-1.0-R-small:
@@ -198,14 +198,21 @@ base-image-amazon-chronos:
 	docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION) ./docker/base/amazon-chronos
 	docker push $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION)
 
-.PHONY: amazon-chronos-images
+.PHONY: amazon-chronos-t5-images
 ## Build all amazon-chronos-t5 images
-amazon-chronos-images:
-	@for model_name in t5-tiny t5-mini t5-small t5-base t5-large bolt-tiny bolt-mini bolt-small bolt-base; do \
-		docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) --build-arg MODEL_NAME=$$model_name -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_$$model_name ./models/amazon-chronos; \
-		docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_$$model_name; \
+amazon-chronos-t5-images:
+	@for model_size in tiny mini small base large; do \
+		docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) --build-arg MODEL_NAME=t5-$$model_size -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_t5-$$model_size ./models/amazon-chronos_t5; \
 	done
 
+.PHONY: amazon-chronos-bolt-images
+## Build all amazon-chronos-t5 images
+amazon-chronos-bolt-images:
+	@for model_size in tiny mini small base; do \
+		docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) --build-arg MODEL_NAME=bolt-$$model_size -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_bolt-$$model_size ./models/amazon-chronos_bolt; \
+	done
+
+#		docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_$$model_name; \
 .PHONY: base-image-salesforce-moirai
 base-image-salesforce-moirai:
 	docker build -t $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai ./docker/base/salesforce-moirai

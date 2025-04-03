@@ -9,12 +9,18 @@ from enfobench import AuthorInfo, ForecasterType, ModelInfo
 from enfobench.evaluation.server import server_factory
 from enfobench.evaluation.utils import create_forecast_index, periods_in_duration
 
-# Check for GPU availability
-device = "cuda" if torch.cuda.is_available() else "cpu"
+
 root_dir = Path(__file__).parent.parent
+# Check for GPU availability
+if torch.cuda.is_available():
+    device = "cuda"
+elif torch.backends.mps.is_available():
+    device = "mps"
+else:
+    device = "cpu"
 
 
-class AmazonChronosModel:
+class AmazonChronosT5Model:
     def __init__(self, model_name: str, num_samples: int, ctx_length: str | None = None):
         self.model_name = model_name
         self.num_samples = num_samples
@@ -92,7 +98,7 @@ num_samples = int(os.getenv("ENFOBENCH_NUM_SAMPLES"))
 ctx_length = os.getenv("ENFOBENCH_CTX_LENGTH")
 
 # Instantiate your model
-model = AmazonChronosModel(model_name=model_name, num_samples=num_samples, ctx_length=ctx_length)
+model = AmazonChronosT5Model(model_name=model_name, num_samples=num_samples, ctx_length=ctx_length)
 
 # Create a forecast server by passing in your model
 app = server_factory(model)
