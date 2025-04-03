@@ -1,15 +1,16 @@
-FROM attilabalint/enfobench-models:base-amazon-chronos-1.2.0
+ARG CHRONOS_VERSION
+FROM attilabalint/enfobench-models:base-amazon-chronos-$CHRONOS_VERSION
 
 WORKDIR /usr/local/app
 
-COPY ./requirements.txt /usr/local/app/requirements.txt
+COPY requirements.txt /usr/local/app/requirements.txt
 RUN pip install --no-cache-dir -r /usr/local/app/requirements.txt
 
-ARG MODEL_SIZE
-COPY ./models/chronos-t5-${MODEL_SIZE} /usr/local/app/models/chronos-t5-${MODEL_SIZE}
-COPY ./src /usr/local/app/src
+ARG MODEL_NAME
+COPY ./models/chronos-${MODEL_NAME} /usr/local/app/models/chronos-${MODEL_NAME}
+COPY src /usr/local/app/src
 
-ENV ENFOBENCH_MODEL_NAME="chronos-t5-${MODEL_SIZE}"
+ENV ENFOBENCH_MODEL_NAME="chronos-${MODEL_NAME}"
 ENV ENFOBENCH_NUM_SAMPLES="1"
 
 EXPOSE 3000

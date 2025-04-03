@@ -22,9 +22,9 @@ class AmazonChronosModel:
 
     def info(self) -> ModelInfo:
         name = (
-            "Amazon."
-            f'{".".join(map(str.capitalize, self.model_name.split("-")))}'
-            f'{".CTX" + self.ctx_length if self.ctx_length else ""}'
+            "Amazon-"
+            f'{"-".join(map(str.capitalize, self.model_name.split("-")))}'
+            f'{"-CTX" + self.ctx_length if self.ctx_length else ""}'
         )
         return ModelInfo(
             name=name,

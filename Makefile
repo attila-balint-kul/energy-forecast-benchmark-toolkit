@@ -1,32 +1,38 @@
+.ONESHELL:
+
 #################################################################################
 # GLOBALS                                                                       #
 #################################################################################
 
-PROJECT_NAME = energy-forecast-benchmark-toolkit
-PACKAGE_NAME = enfobench
 PYTHON_INTERPRETER ?= python3
 
-PLATFORM := $(shell uname -s | grep -q "Darwin" && uname -m | grep -q "arm64" && echo "--platform linux/amd64")
+DOCKER_HUB_REPOSITORY ?= attilabalint/enfobench-models
+ENFOBENCH_VERSION := $(shell hatch version)
+DEFAULT_PORT := 3001
+
+DARTS_VERSION := 0.34.0
+SKTIME_VERSION := 0.36.0
+STATSFORECAST_VERSION := 2.0.1
+CHRONOS_VERSION := 1.5.0
 
 #################################################################################
 # COMMANDS                                                                      #
 #################################################################################
 
 ## Create python virtual environment
-venv/bin/python:
+.venv/bin/python:
 	( \
-		$(PYTHON_INTERPRETER) -m venv ./venv; \
-		source ./venv/bin/activate; \
-		uv pip install --upgrade pip; \
+		uv sync; \
+		. $(PROJECT_DIR)/.venv/bin/activate; \
+		uv pip install -e .; \
 	)
 
-.PHONY: install
-## Install project dependencies
-install: venv/bin/python
-	(\
-		source ./venv/bin/activate; \
-		uv pip install -e .; \
-    )
+## Create python virtual environment with dependencies
+env: .venv/bin/python
+
+## Compile project dependencies into a requirements.txt file
+requirements.txt: .venv/bin/python pyproject.toml
+	uv pip compile pyproject.toml -o requirements.txt
 
 .PHONY: clean
 ## Delete all compiled Python files
@@ -104,12 +110,27 @@ models/amazon-chronos/models/chronos-t5-base:
 models/amazon-chronos/models/chronos-t5-large:
 	git clone https://huggingface.co/amazon/chronos-t5-large ./models/amazon-chronos/models/chronos-t5-large --progress
 
+models/amazon-chronos/models/chronos-bolt-tiny:
+	git clone https://huggingface.co/amazon/chronos-bolt-tiny ./models/amazon-chronos/models/chronos-bolt-tiny
+
+models/amazon-chronos/models/chronos-bolt-mini:
+	git clone https://huggingface.co/amazon/chronos-bolt-mini ./models/amazon-chronos/models/chronos-bolt-mini
+
+models/amazon-chronos/models/chronos-bolt-small:
+	git clone https://huggingface.co/amazon/chronos-bolt-small ./models/amazon-chronos/models/chronos-bolt-small
+
+models/amazon-chronos/models/chronos-bolt-base:
+	git clone https://huggingface.co/amazon/chronos-bolt-base ./models/amazon-chronos/models/chronos-bolt-base --progress
+
 download-amazon-chronos: models/amazon-chronos/models/chronos-t5-tiny \
 						 models/amazon-chronos/models/chronos-t5-mini \
 						 models/amazon-chronos/models/chronos-t5-small \
 						 models/amazon-chronos/models/chronos-t5-base \
-						 models/amazon-chronos/models/chronos-t5-large
-
+						 models/amazon-chronos/models/chronos-t5-large \
+						 models/amazon-chronos/models/chronos-bolt-tiny \
+						 models/amazon-chronos/models/chronos-bolt-mini \
+						 models/amazon-chronos/models/chronos-bolt-small \
+						 models/amazon-chronos/models/chronos-bolt-base
 
 
 models/salesforce-moirai/models/moirai-1.0-R-small:
@@ -129,76 +150,81 @@ download-salesforce-moirai: models/salesforce-moirai/models/moirai-1.0-R-small \
 # MODEL RULES                                                                   #
 #################################################################################
 
-DOCKER_HUB_REPOSITORY ?= attilabalint/enfobench-models
-ENFOBENCH_VERSION := $(shell hatch version)
-MODEL := sf-naive
-IMAGE_TAG := $(ENFOBENCH_VERSION)-$(MODEL)
-DEFAULT_PORT := 3000
-
-DARTS_VERSION := 0.30.0
-SKTIME_VERSION := 0.30.1
-STATSFORECAST_VERSION := 1.7.5
-CHRONOS_VERSION := 1.2.0
-
-
 .PHONY: base-image-darts
 ## Build base image for darts
 base-image-darts:
-	docker build $(PLATFORM) --build-arg DARTS_VERSION=$(DARTS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION) ./docker/base/darts
+	docker build --build-arg DARTS_VERSION=$(DARTS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION) ./docker/base/darts
 	docker push $(DOCKER_HUB_REPOSITORY):base-u8darts-$(DARTS_VERSION)
 
-
-.PHONY: base-image-sktime
-## Build base image for sktime
-base-image-sktime:
-	docker build $(PLATFORM) --build-arg SKTIME_VERSION=$(SKTIME_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION) ./docker/base/sktime
-	docker push $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION)
-
+.PHONY: darts-images
+## Build all darts images
+darts-images: base-image-darts
+	@for model in $(shell find models -maxdepth 1 -type d -name 'darts*' -exec basename {} \;); do \
+		docker build --build-arg DARTS_VERSION=$(DARTS_VERSION) -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$$model ./models/$$model; \
+		docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$$model; \
+	done
 
 .PHONY: base-image-statsforecast
 ## Build base image for statsforecast
 base-image-statsforecast:
-	docker build $(PLATFORM) --build-arg STATSFORECAST_VERSION=$(STATSFORECAST_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION) ./docker/base/statsforecast
+	docker build --build-arg STATSFORECAST_VERSION=$(STATSFORECAST_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION) ./docker/base/statsforecast
 	docker push $(DOCKER_HUB_REPOSITORY):base-statsforecast-$(STATSFORECAST_VERSION)
 
+.PHONY: statsforecast-images
+## Build all statsforecast images
+statsforecast-images: base-image-statsforecast
+	@for model in $(shell find models -maxdepth 1 -type d -name 'statsforecast*' -exec basename {} \;); do \
+		docker build --build-arg STATSFORECAST_VERSION=$(STATSFORECAST_VERSION) -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$$model ./models/$$model; \
+		docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$$model; \
+	done
+
+.PHONY: base-image-sktime
+## Build base image for sktime
+base-image-sktime:
+	docker build --build-arg SKTIME_VERSION=$(SKTIME_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION) ./docker/base/sktime
+	docker push $(DOCKER_HUB_REPOSITORY):base-sktime-$(SKTIME_VERSION)
+
+.PHONY: sktime-images
+## Build all sktime images
+sktime-images: base-image-sktime
+	@for model in $(shell find models -maxdepth 1 -type d -name 'sktime*' -exec basename {} \;); do \
+		docker build --build-arg SKTIME_VERSION=$(SKTIME_VERSION) -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$$model ./models/$$model; \
+		docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$$model; \
+	done
 
 .PHONY: base-image-amazon-chronos
+## Build base image for amazon-chronos-t5
 base-image-amazon-chronos:
-	docker build $(PLATFORM) --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION) ./docker/base/amazon-chronos
+	docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION) ./docker/base/amazon-chronos
 	docker push $(DOCKER_HUB_REPOSITORY):base-amazon-chronos-$(CHRONOS_VERSION)
 
+.PHONY: amazon-chronos-images
+## Build all amazon-chronos-t5 images
+amazon-chronos-images:
+	@for model_name in t5-tiny t5-mini t5-small t5-base t5-large bolt-tiny bolt-mini bolt-small bolt-base; do \
+		docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) --build-arg MODEL_NAME=$$model_name -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_$$model_name ./models/amazon-chronos; \
+		docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_$$model_name; \
+	done
 
 .PHONY: base-image-salesforce-moirai
 base-image-salesforce-moirai:
-	docker build $(PLATFORM) -t $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai ./docker/base/salesforce-moirai
+	docker build -t $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai ./docker/base/salesforce-moirai
 	docker push $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai
-
-
-## Build base images
-base-images: base-image-darts \
-			 base-image-sktime \
-			 base-image-statsforecast \
-			 base-image-amazon-chronos \
-			 base-image-salesforce-moirai
-
 
 .PHONY: build-image
 ## Build a model image
 build-image:
-	docker build $(PLATFORM) -t $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG) ./models/$(MODEL)
-
+	docker build -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$(MODEL) ./models/$(MODEL)
 
 .PHONY: push-image
 ## Push a model image to Docker Hub
 push-image:
-	docker push $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG)
-
+	docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$(MODEL)
 
 .PHONY: run-image
 ## Run a model image
 run-image:
-	docker run $(PLATFORM) -it --rm -p $(DEFAULT_PORT):3000 $(DOCKER_HUB_REPOSITORY):$(IMAGE_TAG)
-
+	docker run -it --rm -p $(DEFAULT_PORT):3000 $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$(MODEL)
 
 #################################################################################
 # Self Documenting Commands                                                     #
