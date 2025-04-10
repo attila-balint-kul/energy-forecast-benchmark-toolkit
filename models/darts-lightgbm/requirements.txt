@@ -1,2 +1,2 @@
 enfobench>=0.7.1,<0.8.0
-lightgbm==4.1.0
+lightgbm==4.6.0
