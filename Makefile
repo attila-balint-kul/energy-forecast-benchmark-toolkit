@@ -12,6 +12,7 @@ DEFAULT_PORT := 3001
 
 DARTS_VERSION := 0.34.0
 SKTIME_VERSION := 0.36.0
+SKFORECAST_VERSION := 0.15.1
 STATSFORECAST_VERSION := 2.0.1
 CHRONOS_VERSION := 1.5.0
 
@@ -187,8 +188,22 @@ base-image-sktime:
 .PHONY: sktime-images
 ## Build all sktime images
 sktime-images: base-image-sktime
-	@for model in $(shell find models -maxdepth 1 -type d -name 'sktime*' -exec basename {} \;); do \
+	@for model in $(shell find models -maxdepth 1 -type d -name 'sktime-*' -exec basename {} \;); do \
 		docker build --build-arg SKTIME_VERSION=$(SKTIME_VERSION) -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$$model ./models/$$model; \
+		docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$$model; \
+	done
+
+.PHONY: base-image-skforecast
+## Build base image for skforecast
+base-image-skforecast:
+	docker build --build-arg SKFORECAST_VERSION=$(SKFORECAST_VERSION) -t $(DOCKER_HUB_REPOSITORY):base-skforecast-$(SKFORECAST_VERSION) ./docker/base/skforecast
+	docker push $(DOCKER_HUB_REPOSITORY):base-skforecast-$(SKFORECAST_VERSION)
+
+.PHONY: skforecast-images
+## Build all skforecast images
+skforecast-images: base-image-skforecast
+	@for model in $(shell find models -maxdepth 1 -type d -name 'skforecast-*' -exec basename {} \;); do \
+		docker build --build-arg SKFORECAST_VERSION=$(SKFORECAST_VERSION) -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$$model ./models/$$model; \
 		docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-$$model; \
 	done
 
@@ -203,6 +218,7 @@ base-image-amazon-chronos:
 amazon-chronos-t5-images:
 	@for model_size in tiny mini small base large; do \
 		docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) --build-arg MODEL_NAME=t5-$$model_size -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_t5-$$model_size ./models/amazon-chronos_t5; \
+		docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_t5-$$model_size; \
 	done
 
 .PHONY: amazon-chronos-bolt-images
@@ -210,9 +226,9 @@ amazon-chronos-t5-images:
 amazon-chronos-bolt-images:
 	@for model_size in tiny mini small base; do \
 		docker build --build-arg CHRONOS_VERSION=$(CHRONOS_VERSION) --build-arg MODEL_NAME=bolt-$$model_size -t $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_bolt-$$model_size ./models/amazon-chronos_bolt; \
+		docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_bolt-$$model_size; \
 	done
 
-#		docker push $(DOCKER_HUB_REPOSITORY):$(ENFOBENCH_VERSION)-amazon-chronos_$$model_name; \
 .PHONY: base-image-salesforce-moirai
 base-image-salesforce-moirai:
 	docker build -t $(DOCKER_HUB_REPOSITORY):base-salesforce-moirai ./docker/base/salesforce-moirai
