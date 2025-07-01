@@ -6,44 +6,108 @@ from environs import Env
 from feature_engine.creation import CyclicalFeatures
 from feature_engine.datetime import DatetimeFeatures
 from feature_engine.timeseries.forecasting import WindowFeatures
-from lightgbm import LGBMRegressor
+from marshmallow.validate import OneOf
 from skforecast.preprocessing import RollingFeatures
 from skforecast.recursive import ForecasterRecursive
-from sklearn.preprocessing import SplineTransformer
+from sklearn.preprocessing import SplineTransformer, PolynomialFeatures
 
 from enfobench import ModelInfo, AuthorInfo, ForecasterType
 from enfobench.evaluation.server import server_factory
 from enfobench.evaluation.utils import periods_in_duration, create_forecast_index
+
+REGRESSOR_CHOICES = ["LGBMRegressor", "LinearRegression",]
+SCALER_CHOICES = [
+    'StandardScaler',
+    "MinMaxScaler",
+    "RobustScaler",
+    "MaxAbsScaler",
+    "NormalQuantileTransformer",
+]
+
+CalendarFeature = Literal[
+    'month',
+    'quarter',
+    'semester',
+    'year',
+    'week',
+    'day_of_week',
+    'day_of_month',
+    'day_of_year',
+    'weekend',
+    'month_start',
+    'month_end',
+    'quarter_start',
+    'quarter_end',
+    'year_start',
+    'year_end',
+    'leap_year',
+    'days_in_month',
+    'hour',
+    'minute',
+    'second',
+]
+
+CyclicalCalendarFeature = Literal[
+    'month',
+    'quarter',
+    'semester',
+    'week',
+    'day_of_week',
+    'day_of_month',
+    'day_of_year',
+    'hour',
+    'minute',
+    'second',
+]
+
+BSplineCalendarFeature = Literal[
+    "month",
+    "quarter",
+    "week",
+    "day_of_week",
+    "day_of_month",
+    "hour",
+]
+
+WindowStats = Literal['min', 'max', 'mean', 'std', 'sum']
 
 
 class SkforecastLightGBMModel:
 
     def __init__(
         self,
+        regressor: str,
         model_name: str,
         lags: str = '1D',
-        calendar_features: list[str] | None = None,
-        cyclical_calendar_features: list[str] | None = None,
-        bspline_calendar_features: list[str] | None = None,
+        calendar_features: list[CalendarFeature] | None = None,
+        cyclical_calendar_features: list[CyclicalCalendarFeature] | None = None,
+        bspline_calendar_features: list[BSplineCalendarFeature] | None = None,
         holiday_features: bool = False,
-        exog_window_features: list[tuple[str, str, Literal['min', 'max', 'mean', 'std', 'sum']]] | None = None,
-        window_features: list[tuple, str, Literal['min', 'max', 'mean', 'std', 'sum']] | None = None,
+        y_scaler: str | None = None,
+        exog_scaler: str | None = None,
+        window_features: list[tuple, str, WindowStats] | None = None,
         exogenous_features: list[str] | Literal['all'] | None = None,
+        exog_window_features: list[tuple[str, str, WindowStats]] | None = None,
+        polynomial_features: dict | None = None,
     ):
+        self.regressor = regressor
         self.model_name = model_name
         self.lags = lags
         self.calendar_features = calendar_features or []
         self.cyclical_calendar_features = cyclical_calendar_features or []
         self.bspline_calendar_features = bspline_calendar_features or []
         self.holiday_features = holiday_features
-        self.exog_window_features = exog_window_features or []
+        self.y_scaler = y_scaler
+        self.exog_scaler = exog_scaler
         self.window_features = window_features
-        self.rolling_features = None
         self.exogenous_features = exogenous_features
+        self.exog_window_features = exog_window_features or []
+        self.rolling_features = None
+        self.poly_features = polynomial_features or {}
 
     def info(self) -> ModelInfo:
         return ModelInfo(
-            name=f"Skforecast-LightGBM-{self.lags}-{self.model_name}",
+            name=f"Skforecast-{self.regressor}-{self.lags}-{self.model_name}",
             authors=[
                 AuthorInfo(name="Attila Balint", email="attila.balint@kuleuven.be"),
             ],
@@ -54,9 +118,13 @@ class SkforecastLightGBMModel:
                 "cyclical_calendar_features": self.cyclical_calendar_features,
                 "bspline_calendar_features": self.bspline_calendar_features,
                 "holiday_features": self.holiday_features,
-                "exog_window_features": self.exog_window_features,
+                "y_scaler": self.y_scaler,
+                "exogenous_scaler": self.exog_scaler,
                 "window_features": self.window_features,
                 "exogenous_features": self.exogenous_features,
+                "exog_window_features": self.exog_window_features,
+                "rolling_features": self.rolling_features,
+                "poly_features": self.poly_features,
             },
         )
 
@@ -80,12 +148,20 @@ class SkforecastLightGBMModel:
         country_holidays = holidays.country_holidays(country_code)
         holiday_features['holiday'] = [int(date in country_holidays) for date in holiday_features.index.date]
 
+        periods_in_a_day = periods_in_duration(index, duration=pd.Timedelta(days=1))
+        holiday_features['holiday_previous_day'] = holiday_features['holiday'].shift(periods_in_a_day).fillna(0).astype(
+            int
+        )
+        holiday_features['holiday_next_day'] = holiday_features['holiday'].shift(-periods_in_a_day).fillna(0).astype(
+            int
+        )
+
         # Extracting working day feature
         holiday_features['working_day'] = (holiday_features.index.dayofweek < 5 & ~holiday_features.holiday).astype(int)
         return holiday_features
 
     @staticmethod
-    def _extract_calendar_features(index: pd.DatetimeIndex, calendar_features: list[str]) -> pd.DataFrame:
+    def _extract_calendar_features(index: pd.DatetimeIndex, calendar_features: list[CalendarFeature]) -> pd.DataFrame:
         """Extracts calendar features from the input data.
 
         The following features are supported:
@@ -237,8 +313,31 @@ class SkforecastLightGBMModel:
 
         return windowed_features_df
 
+    @staticmethod
+    def _extract_polynomial_features(
+        exog: pd.DataFrame,
+        columns: list[str],
+        degree: int,
+        interaction_only: bool,
+        include_bias: bool,
+    ) -> pd.DataFrame:
+        if not columns:
+            raise ValueError("No columns provided.")
+
+        transformer_poly = PolynomialFeatures(
+            degree=degree,
+            interaction_only=interaction_only,
+            include_bias=include_bias,
+        ).set_output(transform="pandas")
+
+        poly_features = transformer_poly.fit_transform(exog[columns])
+        poly_features = poly_features.drop(columns=columns)
+        poly_features.columns = [f"poly_{col.replace(" ", "__")}" for col in poly_features.columns]
+        return poly_features
+
     def _prepare_data(
         self,
+        forecast_index: pd.DatetimeIndex,
         history: pd.DataFrame,
         past_covariates: pd.DataFrame | None = None,
         future_covariates: pd.DataFrame | None = None,
@@ -253,62 +352,76 @@ class SkforecastLightGBMModel:
             .ffill()
         ).y
 
-        if self.exogenous_features is None or self.exogenous_features == []:
-            return target, None
-
         exog = (
             past_covariates
             .combine_first(future_covariates.drop(columns=['cutoff_date']))
             .resample(freq).asfreq()
             .interpolate()
         )
-        if self.exogenous_features != 'all' and isinstance(self.exogenous_features, list):
-            exog = exog.loc[:, self.exogenous_features]
 
-        # Calendar features
+        selected_exog = pd.DataFrame(index=history.index.union(forecast_index))
+        if self.exogenous_features is not None:
+            if 'all' in self.exogenous_features:
+                weather_features = exog.copy()
+            elif isinstance(self.exogenous_features, list):
+                weather_features = exog.loc[:, self.exogenous_features].copy()
+            else:
+                msg = f"Could not parse exogenous features: {self.exogenous_features}"
+                raise ValueError(msg)
+            selected_exog = selected_exog.merge(weather_features, left_index=True, right_index=True, how="left")
+
         if self.calendar_features:
             calendar_features = self._extract_calendar_features(
-                index=exog.index,
+                index=selected_exog.index,
                 calendar_features=self.calendar_features,
             )
-            exog = exog.merge(calendar_features, left_index=True, right_index=True, how='left')
+            selected_exog = selected_exog.merge(calendar_features, left_index=True, right_index=True, how='left')
 
         if self.cyclical_calendar_features:
             cyclical_calendar_features = self._extract_cyclical_calendar_features(
-                index=exog.index,
+                index=selected_exog.index,
                 calendar_features=self.cyclical_calendar_features,
             )
-            exog = exog.merge(cyclical_calendar_features, left_index=True, right_index=True, how='left')
+            selected_exog = selected_exog.merge(
+                cyclical_calendar_features, left_index=True, right_index=True, how='left'
+            )
 
         if self.bspline_calendar_features:
             bspline_calendar_features = self._extract_bspline_calendar_features(
-                index=exog.index,
+                index=selected_exog.index,
                 calendar_features=self.bspline_calendar_features,
             )
-            exog = exog.merge(bspline_calendar_features, left_index=True, right_index=True, how='left')
+            selected_exog = selected_exog.merge(
+                bspline_calendar_features, left_index=True, right_index=True, how='left'
+            )
 
-        # Holiday features
         if self.holiday_features:
             holiday_features = self._extract_holiday_features(
-                index=exog.index,
+                index=selected_exog.index,
                 location=metadata['location']
             )
-            exog = exog.merge(holiday_features, left_index=True, right_index=True, how='left')
+            selected_exog = selected_exog.merge(holiday_features, left_index=True, right_index=True, how='left')
 
-        # Windowed features
         if self.exog_window_features:
             exog_window_features = self._extract_windowed_features(
                 exog=exog,
                 window_features=self.exog_window_features,
             )
-            exog = exog.merge(exog_window_features, left_index=True, right_index=True, how='left')
+            selected_exog = selected_exog.merge(exog_window_features, left_index=True, right_index=True, how='left')
 
-        return target, exog
+        if self.poly_features:
+            exog_poly_features = self._extract_polynomial_features(
+                exog=selected_exog,
+                columns=self.poly_features.get('columns', "").split(','),
+                degree=int(self.poly_features.get('degree', 2)),
+                interaction_only=bool(self.poly_features.get('interaction_only', True)),
+                include_bias=bool(self.poly_features.get('include_bias', False)),
+            )
+            selected_exog = selected_exog.merge(exog_poly_features, left_index=True, right_index=True, how='left')
+
+        return target, selected_exog
 
     def _get_window_features(self, y) -> RollingFeatures | None:
-        if isinstance(self.rolling_features, RollingFeatures):
-            return self.rolling_features
-
         if self.window_features is None:
             return None
 
@@ -318,11 +431,11 @@ class SkforecastLightGBMModel:
             stats.append(stat)
             window_sizes.append(periods_in_duration(y.index, duration=window_size))
 
-        self.rolling_features = RollingFeatures(
+        rolling_features = RollingFeatures(
             stats=stats,
             window_sizes=window_sizes,
         )
-        return self.rolling_features
+        return rolling_features
 
     def forecast(
         self,
@@ -334,19 +447,23 @@ class SkforecastLightGBMModel:
         level: list[int] | None = None,
         **kwargs,
     ) -> pd.DataFrame:
+        forecast_index = create_forecast_index(history, horizon=horizon)
+
         # Feature engineering
         y, exog = self._prepare_data(
+            forecast_index=forecast_index,
             history=history,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             metadata=metadata,
         )
 
-        # Model specification
         forecaster = ForecasterRecursive(
-            regressor=LGBMRegressor(random_state=42, verbose=-1),
+            regressor=self._get_regressor(self.regressor),
             lags=periods_in_duration(y.index, duration=self.lags),
             window_features=self._get_window_features(y=y),
+            transformer_y=self._get_scaler(self.y_scaler),
+            transformer_exog=self._get_scaler(self.exog_scaler)
         )
 
         # Fit the forecaster
@@ -367,26 +484,97 @@ class SkforecastLightGBMModel:
         )
         return forecast
 
+    @staticmethod
+    def _get_regressor(regressor: str):
+        # Model specification
+        if regressor == 'LinearRegression':
+            from sklearn.linear_model import LinearRegression
+            return LinearRegression()
+        elif regressor == 'LGBMRegressor':
+            from lightgbm import LGBMRegressor
+            return LGBMRegressor(random_state=42, verbose=-1)
+
+        msg = f"Unknown regressor: {regressor}"
+        raise ValueError(msg)
+
+    @staticmethod
+    def _get_scaler(scaler: str | None):
+        if scaler is None:
+            return None
+        elif scaler == "StandardScaler":
+            from sklearn.preprocessing import StandardScaler
+            return StandardScaler()
+        elif scaler == "MinMaxScaler":
+            from sklearn.preprocessing import MinMaxScaler
+            return MinMaxScaler()
+        elif scaler == "MaxAbsScaler":
+            from sklearn.preprocessing import MaxAbsScaler
+            return MaxAbsScaler()
+        elif scaler == "RobustScaler":
+            from sklearn.preprocessing import RobustScaler
+            return RobustScaler()
+        elif scaler == "NormalQuantileTransformer":
+            from sklearn.preprocessing import QuantileTransformer
+            return QuantileTransformer(output_distribution='normal', random_state=0)
+
+        msg = f"Unknown scaler: {scaler}"
+        raise ValueError(msg)
+
 
 env = Env(prefix="ENFOBENCH_MODEL_")
+
+
+# Register a new parser method for paths
+@env.parser_for("exog_window_feature")
+def exog_window_feature_parser(value):
+    window_features = value.split(";") if value != "" else []
+
+    parsed = []
+    for window_feature in window_features:
+        window_config = window_feature.split(",", maxsplit=2)
+        parsed.append(tuple(window_config))
+    return parsed
+
+
+@env.parser_for("window_feature")
+def window_feature_parser(value):
+    window_features = value.split(";") if value != "" else []
+
+    parsed = []
+    for window_feature in window_features:
+        window_config = window_feature.split(",", maxsplit=1)
+        parsed.append(tuple(window_config))
+    return parsed
+
 
 # Instantiate your model
 model = SkforecastLightGBMModel(
     model_name=env.str("NAME"),
+    regressor=env.str(
+        "REGRESSOR",
+        default="LGBMRegressor",
+        validate=OneOf(REGRESSOR_CHOICES, error="ENFOBENCH_MODEL_REGRESSOR must be one of: {choices}"),
+    ),
     lags=env.str("LAGS", default="1D"),
     holiday_features=env.bool("HOLIDAY_FEATURES", default=False),
     calendar_features=env.list("CALENDAR_FEATURES", default=None),
     cyclical_calendar_features=env.list("CYCLICAL_CALENDAR_FEATURES", default=None),
     bspline_calendar_features=env.list("BSPLINE_CALENDAR_FEATURES", default=None),
-    exog_window_features=env.list("EXOG_WINDOW_FEATURES", default=None),
-    window_features=env.list("WINDOW_FEATURES", default=None),
+    y_scaler=env.str(
+        "Y_SCALER",
+        default=None,
+        validate=OneOf(SCALER_CHOICES, error="ENFOBENCH_MODEL_Y_SCALER must be one of: {choices}"),
+    ),
+    exog_scaler=env.str(
+        "EXOGENOUS_SCALER",
+        default=None,
+        validate=OneOf(SCALER_CHOICES, error="ENFOBENCH_MODEL_Y_SCALER must be one of: {choices}"),
+    ),
+    window_features=env.window_feature("WINDOW_FEATURES", default=""),
     exogenous_features=env.list("EXOGENOUS_FEATURES", default=None),
+    exog_window_features=env.exog_window_feature("EXOGENOUS_WINDOW_FEATURES", default=""),
+    polynomial_features=env.dict("POLYNOMIAL_FEATURES", default=None, delimiter=";"),
 )
 
 # Create a forecast server by passing in your model
 app = server_factory(model)
-
-
-if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
