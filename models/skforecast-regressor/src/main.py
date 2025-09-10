@@ -506,7 +506,7 @@ class SkforecastRecursiveRegressionModel:
             exog_train = exog.loc[y.index, :] if exog is not None else None
 
             self._forecaster = ForecasterRecursive(
-                regressor=self._get_regressor(self.regressor),
+                regressor=self._get_regressor(self.regressor, self.regressor_kwargs),
                 lags=periods_in_duration(y.index, duration=self.lags),
                 window_features=self._get_window_features(y=y),
                 transformer_y=self._get_scaler(self.y_scaler),
