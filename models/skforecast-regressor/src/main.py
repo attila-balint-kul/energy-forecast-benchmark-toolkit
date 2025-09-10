@@ -21,6 +21,7 @@ SCALER_CHOICES = [
     "MinMaxScaler",
     "RobustScaler",
     "MaxAbsScaler",
+    "PowerTransformer",
     "NormalQuantileTransformer",
 ]
 
@@ -89,6 +90,7 @@ class SkforecastLightGBMModel:
         exogenous_features: list[str] | Literal['all'] | None = None,
         exog_window_features: list[tuple[str, str, WindowStats]] | None = None,
         polynomial_features: dict | None = None,
+        retrain_gap: str | None = None,
     ):
         self.regressor = regressor
         self.model_name = model_name
@@ -104,6 +106,9 @@ class SkforecastLightGBMModel:
         self.exog_window_features = exog_window_features or []
         self.rolling_features = None
         self.poly_features = polynomial_features or {}
+        self.retrain_gap: str | None = retrain_gap
+        self._last_retrained: pd.Timestamp | None = None
+        self._forecaster: ForecasterRecursive | None = None
 
     def info(self) -> ModelInfo:
         return ModelInfo(
@@ -123,8 +128,8 @@ class SkforecastLightGBMModel:
                 "window_features": self.window_features,
                 "exogenous_features": self.exogenous_features,
                 "exog_window_features": self.exog_window_features,
-                "rolling_features": self.rolling_features,
                 "poly_features": self.poly_features,
+                "retrain_gap": self.retrain_gap,
             },
         )
 
@@ -352,18 +357,32 @@ class SkforecastLightGBMModel:
             .ffill()
         ).y
 
-        exog = (
-            past_covariates
-            .combine_first(future_covariates.drop(columns=['cutoff_date']))
-            .resample(freq).asfreq()
-            .interpolate()
-        )
+        exog: pd.DataFrame | None
+        if past_covariates is not None and future_covariates is not None:
+            exog = (
+                past_covariates
+                .combine_first(future_covariates.drop(columns=['cutoff_date']))
+                .resample(freq).asfreq()
+                .interpolate()
+            )
+        elif past_covariates is not None:
+            exog = (
+                past_covariates
+                .resample(freq).asfreq()
+                .interpolate()
+            )
+        elif future_covariates is not None:
+            exog = (
+                future_covariates.drop(columns=['cutoff_date'])
+                .resample(freq).asfreq()
+                .interpolate()
+            )
+        else:
+            exog = None
 
         selected_exog = pd.DataFrame(index=history.index.union(forecast_index))
         if self.exogenous_features is not None:
-            if 'all' in self.exogenous_features:
-                weather_features = exog.copy()
-            elif isinstance(self.exogenous_features, list):
+            if isinstance(self.exogenous_features, list):
                 weather_features = exog.loc[:, self.exogenous_features].copy()
             else:
                 msg = f"Could not parse exogenous features: {self.exogenous_features}"
@@ -419,10 +438,13 @@ class SkforecastLightGBMModel:
             )
             selected_exog = selected_exog.merge(exog_poly_features, left_index=True, right_index=True, how='left')
 
+        if selected_exog.empty:
+            selected_exog = None
+
         return target, selected_exog
 
     def _get_window_features(self, y) -> RollingFeatures | None:
-        if self.window_features is None:
+        if not self.window_features:
             return None
 
         stats = []
@@ -436,6 +458,19 @@ class SkforecastLightGBMModel:
             window_sizes=window_sizes,
         )
         return rolling_features
+
+    def _should_retrain(self, current_time: pd.Timestamp) -> bool:
+        if self.retrain_gap is None:
+            return True
+
+        if self._last_retrained is None:
+            return True
+
+        gap = pd.Timedelta(self.retrain_gap)
+        if current_time - self._last_retrained >= gap:
+            return True
+
+        return False
 
     def forecast(
         self,
@@ -458,22 +493,28 @@ class SkforecastLightGBMModel:
             metadata=metadata,
         )
 
-        forecaster = ForecasterRecursive(
-            regressor=self._get_regressor(self.regressor),
-            lags=periods_in_duration(y.index, duration=self.lags),
-            window_features=self._get_window_features(y=y),
-            transformer_y=self._get_scaler(self.y_scaler),
-            transformer_exog=self._get_scaler(self.exog_scaler)
-        )
+        # Create forecast horizon
+        forecast_horizon = create_forecast_index(history, horizon)
 
         # Fit the forecaster
-        exog_train = exog.loc[y.index, :] if exog is not None else None
-        forecaster.fit(y=y, exog=exog_train)
+        if self._should_retrain(current_time=history.index[-1]):
+            exog_train = exog.loc[y.index, :] if exog is not None else None
 
-        # Predict the future
-        forecast_horizon = create_forecast_index(history, horizon)
+            self._forecaster = ForecasterRecursive(
+                regressor=self._get_regressor(self.regressor),
+                lags=periods_in_duration(y.index, duration=self.lags),
+                window_features=self._get_window_features(y=y),
+                transformer_y=self._get_scaler(self.y_scaler),
+                transformer_exog=self._get_scaler(self.exog_scaler)
+            )
+            self._forecaster.fit(y=y, exog=exog_train)
+            self._last_retrained = history.index[-1]
+            last_window = None
+        else:
+            last_window = y
+
         exog_predict = exog.loc[forecast_horizon, :] if exog is not None else None
-        prediction = forecaster.predict(steps=horizon, exog=exog_predict)
+        prediction = self._forecaster.predict(steps=horizon, exog=exog_predict, last_window=last_window)
 
         # Postprocess forecast
         forecast = (
@@ -516,6 +557,9 @@ class SkforecastLightGBMModel:
         elif scaler == "NormalQuantileTransformer":
             from sklearn.preprocessing import QuantileTransformer
             return QuantileTransformer(output_distribution='normal', random_state=0)
+        elif scaler == "PowerTransformer":
+            from sklearn.preprocessing import PowerTransformer
+            return PowerTransformer()
 
         msg = f"Unknown scaler: {scaler}"
         raise ValueError(msg)
@@ -556,6 +600,7 @@ model = SkforecastLightGBMModel(
         validate=OneOf(REGRESSOR_CHOICES, error="ENFOBENCH_MODEL_REGRESSOR must be one of: {choices}"),
     ),
     lags=env.str("LAGS", default="1D"),
+    retrain_gap=env.str("RETRAIN_GAP", default=None),
     holiday_features=env.bool("HOLIDAY_FEATURES", default=False),
     calendar_features=env.list("CALENDAR_FEATURES", default=None),
     cyclical_calendar_features=env.list("CYCLICAL_CALENDAR_FEATURES", default=None),
@@ -568,7 +613,7 @@ model = SkforecastLightGBMModel(
     exog_scaler=env.str(
         "EXOGENOUS_SCALER",
         default=None,
-        validate=OneOf(SCALER_CHOICES, error="ENFOBENCH_MODEL_Y_SCALER must be one of: {choices}"),
+        validate=OneOf(SCALER_CHOICES, error="ENFOBENCH_MODEL_EXOGENOUS_SCALER must be one of: {choices}"),
     ),
     window_features=env.window_feature("WINDOW_FEATURES", default=""),
     exogenous_features=env.list("EXOGENOUS_FEATURES", default=None),
