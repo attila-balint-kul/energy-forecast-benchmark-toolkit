@@ -18,6 +18,7 @@ from enfobench.evaluation.utils import periods_in_duration, create_forecast_inde
 REGRESSOR_CHOICES = [
     "LGBMRegressor",
     "LinearRegression",
+    "Lasso",
 ]
 SCALER_CHOICES = [
     'StandardScaler',
@@ -546,6 +547,34 @@ class SkforecastRecursiveRegressionModel:
             if 'positive' in regressor_kwargs:
                 kwargs['positive'] = bool(regressor_kwargs['positive'])
             return LinearRegression(**kwargs)
+
+        elif regressor == 'Lasso':
+            from sklearn.linear_model import Lasso
+
+            kwargs = {}
+            if 'alpha' in regressor_kwargs:
+                kwargs['alpha'] = float(regressor_kwargs['alpha'])
+            if 'fit_intercept' in regressor_kwargs:
+                kwargs['fit_intercept'] = bool(regressor_kwargs['fit_intercept'])
+            if 'precompute' in regressor_kwargs:
+                kwargs['precompute'] = bool(regressor_kwargs['precompute'])
+            if 'copy_X' in regressor_kwargs:
+                kwargs['copy_X'] = bool(regressor_kwargs['copy_X'])
+            if 'max_iter' in regressor_kwargs:
+                kwargs['max_iter'] = int(regressor_kwargs['max_iter'])
+            if 'tol' in regressor_kwargs:
+                kwargs['tol'] = float(regressor_kwargs['tol'])
+            if 'warm_start' in regressor_kwargs:
+                kwargs['warm_start'] = bool(regressor_kwargs['warm_start'])
+            if 'positive' in regressor_kwargs:
+                kwargs['positive'] = bool(regressor_kwargs['positive'])
+            if 'selection' in regressor_kwargs:
+                kwargs['selection'] = str(regressor_kwargs['selection'])
+            if 'random_state' in regressor_kwargs:
+                kwargs['random_state'] = int(regressor_kwargs['random_state'])
+            else:
+                kwargs['random_state'] = 42
+            return Lasso(**kwargs)
 
         elif regressor == 'LGBMRegressor':
             from lightgbm import LGBMRegressor
