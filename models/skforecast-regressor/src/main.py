@@ -15,7 +15,11 @@ from enfobench import ModelInfo, AuthorInfo, ForecasterType
 from enfobench.evaluation.server import server_factory
 from enfobench.evaluation.utils import periods_in_duration, create_forecast_index
 
-REGRESSOR_CHOICES = ["LGBMRegressor", "LinearRegression",]
+REGRESSOR_CHOICES = [
+    "LGBMRegressor",
+    "LinearRegression",
+    "LinearRegressionL1",
+]
 SCALER_CHOICES = [
     'StandardScaler',
     "MinMaxScaler",
@@ -73,7 +77,7 @@ BSplineCalendarFeature = Literal[
 WindowStats = Literal['min', 'max', 'mean', 'std', 'sum']
 
 
-class SkforecastLightGBMModel:
+class SkforecastRecursiveRegressionModel:
 
     def __init__(
         self,
@@ -534,6 +538,9 @@ class SkforecastLightGBMModel:
         elif regressor == 'LGBMRegressor':
             from lightgbm import LGBMRegressor
             return LGBMRegressor(random_state=42, verbose=-1)
+        elif regressor == 'LinearRegressionL1':
+            from lightgbm import LGBMRegressor
+            return LGBMRegressor(random_state=42, verbose=-1, objective='regression_l1')
 
         msg = f"Unknown regressor: {regressor}"
         raise ValueError(msg)
@@ -592,7 +599,7 @@ def window_feature_parser(value):
 
 
 # Instantiate your model
-model = SkforecastLightGBMModel(
+model = SkforecastRecursiveRegressionModel(
     model_name=env.str("NAME"),
     regressor=env.str(
         "REGRESSOR",
