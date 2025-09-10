@@ -18,7 +18,6 @@ from enfobench.evaluation.utils import periods_in_duration, create_forecast_inde
 REGRESSOR_CHOICES = [
     "LGBMRegressor",
     "LinearRegression",
-    "LinearRegressionL1",
 ]
 SCALER_CHOICES = [
     'StandardScaler',
@@ -95,8 +94,10 @@ class SkforecastRecursiveRegressionModel:
         exog_window_features: list[tuple[str, str, WindowStats]] | None = None,
         polynomial_features: dict | None = None,
         retrain_gap: str | None = None,
+        regressor_kwargs: dict | None = None,
     ):
         self.regressor = regressor
+        self.regressor_kwargs = regressor_kwargs or {}
         self.model_name = model_name
         self.lags = lags
         self.calendar_features = calendar_features or []
@@ -530,17 +531,53 @@ class SkforecastRecursiveRegressionModel:
         return forecast
 
     @staticmethod
-    def _get_regressor(regressor: str):
+    def _get_regressor(regressor: str, regressor_kwargs: dict):
         # Model specification
         if regressor == 'LinearRegression':
             from sklearn.linear_model import LinearRegression
-            return LinearRegression()
+
+            kwargs = {}
+            if 'fit_intercept' in regressor_kwargs:
+                kwargs['fit_intercept'] = bool(regressor_kwargs['fit_intercept'])
+            if 'copy_X' in regressor_kwargs:
+                kwargs['copy_X'] = bool(regressor_kwargs['copy_X'])
+            if 'n_jobs' in regressor_kwargs:
+                kwargs['n_jobs'] = int(regressor_kwargs['n_jobs'])
+            if 'positive' in regressor_kwargs:
+                kwargs['positive'] = bool(regressor_kwargs['positive'])
+            return LinearRegression(**kwargs)
+
         elif regressor == 'LGBMRegressor':
             from lightgbm import LGBMRegressor
-            return LGBMRegressor(random_state=42, verbose=-1)
-        elif regressor == 'LinearRegressionL1':
-            from lightgbm import LGBMRegressor
-            return LGBMRegressor(random_state=42, verbose=-1, objective='regression_l1')
+
+            kwargs = {}
+            if 'boosting_type' in regressor_kwargs:
+                kwargs['boosting_type'] = str(regressor_kwargs['boosting_type'])
+            if 'num_leaves' in regressor_kwargs:
+                kwargs['num_leaves'] = int(regressor_kwargs['num_leaves'])
+            if 'max_depth' in regressor_kwargs:
+                kwargs['max_depth'] = int(regressor_kwargs['max_depth'])
+            if 'learning_rate' in regressor_kwargs:
+                kwargs['learning_rate'] = float(regressor_kwargs['learning_rate'])
+            if 'n_estimators' in regressor_kwargs:
+                kwargs['n_estimators'] = int(regressor_kwargs['n_estimators'])
+            if 'objective' in regressor_kwargs:
+                kwargs['objective'] = str(regressor_kwargs['objective'])
+            if 'reg_alpha' in regressor_kwargs:
+                kwargs['reg_alpha'] = float(regressor_kwargs['reg_alpha'])
+            if 'reg_lambda' in regressor_kwargs:
+                kwargs['reg_lambda'] = float(regressor_kwargs['reg_lambda'])
+            if 'n_jobs' in regressor_kwargs:
+                kwargs['n_jobs'] = int(regressor_kwargs['n_jobs'])
+            if 'random_state' in regressor_kwargs:
+                kwargs['random_state'] = int(regressor_kwargs['random_state'])
+            else:
+                kwargs['random_state'] = 42
+            if 'verbose' in regressor_kwargs:
+                kwargs['verbose'] = int(regressor_kwargs['verbose'])
+            else:
+                kwargs['verbose'] = -1
+            return LGBMRegressor(**kwargs)
 
         msg = f"Unknown regressor: {regressor}"
         raise ValueError(msg)
@@ -606,6 +643,7 @@ model = SkforecastRecursiveRegressionModel(
         default="LGBMRegressor",
         validate=OneOf(REGRESSOR_CHOICES, error="ENFOBENCH_MODEL_REGRESSOR must be one of: {choices}"),
     ),
+    regressor_kwargs=env.dict("REGRESSOR_KWARGS", default=None, delimiter=";"),
     lags=env.str("LAGS", default="1D"),
     retrain_gap=env.str("RETRAIN_GAP", default=None),
     holiday_features=env.bool("HOLIDAY_FEATURES", default=False),
